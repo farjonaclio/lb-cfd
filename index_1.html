@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avance del levantamiento · Línea Base CFD · PNUD–FAO Honduras · CliO</title>
+<meta name="description" content="Tablero público de avance del levantamiento de la Línea Base de los Centros Financieros para el Desarrollo (CFD) — Corredor Seco de Honduras. Datos agregados.">
+<style>
+/* Paleta institucional CliO Consulting, tomada del tema de las plantillas del proyecto.
+   Las dos series de datos (avance = magenta, plan = petróleo) están validadas para
+   daltonismo y contraste en modo claro y oscuro. */
+:root{
+  color-scheme: light;
+  --plane:#F4F6F8; --surface:#FFFFFF;
+  --ink:#1D2E41; --ink-2:#5A6470; --muted:#8A94A2;
+  --grid:#E4E9EE; --axis:#C7D0DC; --track:#D8DEE4; --ring:rgba(29,46,65,.12);
+  --avance:#C21A5B;            /* magenta CliO — serie principal */
+  --plan:#007E9B;              /* petróleo CliO — serie de referencia */
+  --avance-wash:#F3D9E2;
+  --brand:#00708A;
+  --good:#2EA56A; --warn:#E8A33D; --crit:#C0392B; --good-ink:#1F7A4D;
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0F151C; --surface:#182029;
+  --ink:#FFFFFF; --ink-2:#C7D0DC; --muted:#8A94A2;
+  --grid:#232D38; --axis:#39444F; --track:#2A3541; --ring:rgba(255,255,255,.12);
+  --avance:#E8437F; --plan:#2AA0B8; --avance-wash:#3A1F2B;
+  --brand:#4FBFBE;
+  --good:#3FBF80; --warn:#E8A33D; --crit:#E05B4A; --good-ink:#3FBF80;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 72px}
+@media(max-width:640px){
+  .wrap{padding:20px 14px 56px}
+  h1{font-size:21px} h2{font-size:15.5px}
+  .card{padding:15px 14px;border-radius:10px}
+  .sub{font-size:12.5px}
+  header.top{gap:12px}
+  .hdr-meta{align-items:flex-start;text-align:left}
+  svg.curva{height:230px}
+}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.01em}
+h1{font-size:26px;line-height:1.2}
+h2{font-size:17px;margin-bottom:2px}
+h3{font-size:14px;margin-bottom:2px}
+.sub{color:var(--ink-2);font-size:13.5px}
+
+header.top{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;
+  padding-bottom:18px;border-bottom:3px solid var(--avance);margin-bottom:18px}
+header.top>div:first-child{flex:1 1 460px;min-width:0}
+header.top>.hdr-meta{flex:0 0 auto}
+.eyebrow{font-size:11.5px;letter-spacing:.10em;text-transform:uppercase;color:var(--brand);font-weight:700;margin-bottom:7px}
+.hdr-meta{text-align:right;font-size:12.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:7px;align-items:flex-end}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ring);border-radius:999px;
+  padding:4px 11px;font-size:11.5px;background:var(--surface);color:var(--ink-2);white-space:nowrap}
+.chip.lock{border-color:color-mix(in srgb,var(--good) 45%,transparent);color:var(--good-ink)}
+button.tgl{cursor:pointer;font:inherit;font-size:11.5px;border:1px solid var(--ring);background:var(--surface);
+  color:var(--ink-2);border-radius:999px;padding:4px 11px}
+button.tgl:hover{border-color:var(--axis)}
+
+.fuente{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:9px 14px;margin-bottom:16px}
+.fuente .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.fuente.live .dot{background:var(--good)} .fuente.err .dot{background:var(--crit)}
+
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}
+@media(max-width:820px){.g2{grid-template-columns:1fr}}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+@media(max-width:1080px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){
+  .kpis{grid-template-columns:repeat(2,1fr);gap:9px}
+  .kpi{padding:12px 13px}
+  .kpi.hero{grid-column:1 / -1}
+  .kpi .lbl{min-height:0;font-size:10.5px;letter-spacing:.05em;margin-bottom:7px}
+  .kpi .val{font-size:26px}
+  .kpi .val small{font-size:13px}
+  .kpi .foot{font-size:11.5px;margin-top:6px}
+}
+@media(max-width:420px){ .kpi .val{font-size:23px} }
+.kpi{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:15px 16px}
+.kpi.hero{border-top:3px solid var(--avance)}
+.kpi .lbl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;
+  margin-bottom:8px;line-height:1.35;min-height:2.7em}
+.kpi .val{font-size:31px;font-weight:660;line-height:1;letter-spacing:-.02em}
+.kpi .val small{font-size:15px;font-weight:500;color:var(--ink-2);letter-spacing:0}
+.kpi .val.neg{color:var(--crit)} .kpi .val.pos{color:var(--good-ink)}
+.kpi .foot{font-size:12px;color:var(--ink-2);margin-top:8px}
+
+/* filas de barra / bullet */
+.rows{display:flex;flex-direction:column;gap:13px;margin-top:24px}
+.row{display:grid;grid-template-columns:196px 1fr 104px;gap:12px;align-items:center}
+@media(max-width:640px){.row{grid-template-columns:112px 1fr 84px}}
+@media(max-width:560px){
+  .row{grid-template-columns:1fr auto;grid-template-areas:'name num' 'track track';row-gap:16px}
+  .row .name{grid-area:name;white-space:normal}
+  .row .num{grid-area:num}
+  .row .track{grid-area:track}
+  .row .num em{display:inline;margin-left:8px}
+  .rows{gap:20px}
+}
+.row .name{font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .name b{color:var(--ink);font-weight:640}
+.row .num{font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+.row .num i{font-style:normal;color:var(--muted)}
+.row .num em{font-style:normal;display:block;font-size:11.5px;margin-top:2px}
+.row .num em.neg{color:var(--crit)} .row .num em.pos{color:var(--good-ink)}
+.track{position:relative;height:18px;background:var(--track);border-radius:4px}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--avance)}
+.fill.zero{background:transparent;border-left:2px solid var(--axis)}
+.fill.over::after{content:"";position:absolute;right:-5px;top:-2px;bottom:-2px;width:3px;
+  background:var(--warn);border-radius:2px;box-shadow:0 0 0 2px var(--surface)}
+/* marca de plan: la referencia contra la que se lee el avance */
+.plan{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--plan);border-radius:2px;
+  box-shadow:0 0 0 2px var(--surface)}
+.plan::after{content:attr(data-l);position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  font-size:9.5px;color:var(--plan);font-weight:640;white-space:nowrap}
+.mark{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--surface);box-shadow:0 0 0 1px var(--axis)}
+.mark::after{content:attr(data-l);position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+  font-size:9.5px;color:var(--muted);white-space:nowrap}
+
+/* subtotal por territorio dentro del avance municipal */
+.grp{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;justify-content:space-between;
+  padding:14px 0 2px;border-top:1px solid var(--grid);margin-top:6px}
+.grp:first-child{border-top:none;margin-top:0;padding-top:4px}
+.grp>span:first-child{font-size:13.5px;font-weight:650;color:var(--ink)}
+.grp .acum{font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.grp .acum b{color:var(--ink);font-size:14px}
+.row .num em.muted{color:var(--muted)}
+
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:16px;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+.sw.line{width:16px;height:3px;border-radius:2px}
+
+.meters{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:14px}
+@media(max-width:820px){.meters{grid-template-columns:1fr}}
+.meter .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:7px}
+.meter .top b{font-size:20px;font-weight:640}
+.meter .top span{font-size:12px;color:var(--ink-2);text-align:right}
+.meter .bar{position:relative;height:14px;background:var(--track);border-radius:4px}
+.meter .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;display:block}
+.meter .note{font-size:11.5px;margin-top:7px}
+
+.st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.st .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.st.ok{color:var(--good-ink)} .st.ok .dot{background:var(--good)}
+.st.wa{color:var(--ink-2)}    .st.wa .dot{background:var(--warn)}
+.st.cr{color:var(--crit)}     .st.cr .dot{background:var(--crit)}
+.st.pe{color:var(--muted)}    .st.pe .dot{background:var(--axis)}
+
+.cols{display:flex;align-items:flex-end;gap:8px;height:132px;margin-top:16px;border-bottom:1px solid var(--axis)}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;min-width:0}
+.col .b{width:100%;max-width:46px;background:var(--avance);border-radius:4px 4px 0 0;min-height:2px}
+.col .v{font-size:12px;font-variant-numeric:tabular-nums}
+.colx{display:flex;gap:8px;margin-top:7px}
+.colx div{flex:1;text-align:center;font-size:11px;color:var(--muted);min-width:0}
+
+svg.curva{width:100%;height:290px;display:block;margin-top:10px;overflow:visible}
+svg.curva text{font:11px system-ui,-apple-system,sans-serif;fill:var(--muted)}
+svg.curva text.lbl{font-size:11.5px;font-weight:650;paint-order:stroke;
+  stroke:var(--surface);stroke-width:3.5px;stroke-linejoin:round}
+svg.curva .gl{stroke:var(--grid);stroke-width:1}
+svg.curva .ax{stroke:var(--axis);stroke-width:1}
+svg.curva .hoy{stroke:var(--axis);stroke-width:1;stroke-dasharray:3 3}
+
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;
+  border-bottom:1px solid var(--axis)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+.mini{font-size:12px;color:var(--ink-2)}
+/* En celular las tablas se apilan: una tabla de 4 columnas no cabe y desborda. */
+@media(max-width:640px){
+  table{font-size:12.5px;table-layout:fixed;width:100%}
+  th,td{padding:7px 6px;overflow-wrap:anywhere}
+  #otros thead{display:none}
+  #otros tr{display:block;padding:11px 0;border-bottom:1px solid var(--grid)}
+  #otros tr:last-child{border-bottom:none}
+  #otros td{display:block;border:none;padding:2px 0}
+  #otros td.n{text-align:left;white-space:normal;margin-top:4px}
+  #pr-tab th:first-child,#pr-tab td:first-child{width:auto}
+  #pr-tab th.n,#pr-tab td.n{width:56px;padding-left:2px}
+}
+
+.note{border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 9%,var(--surface));
+  padding:12px 15px;border-radius:0 8px 8px 0;font-size:13px;color:var(--ink-2);margin-top:14px}
+.note b{color:var(--ink)}
+.note.brand{border-left-color:var(--plan);background:color-mix(in srgb,var(--plan) 7%,var(--surface))}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.tag{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;padding:3px 8px;
+  border-radius:5px;background:var(--avance-wash);color:var(--avance)}
+footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--grid);font-size:12px;color:var(--muted)}
+footer p{margin:5px 0}
+.tt{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;
+  padding:6px 9px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:9;white-space:pre;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <div class="eyebrow">CliO Consulting · PNUD · FAO · Fondo Conjunto para los ODS</div>
+    <h1>Avance del levantamiento — Línea Base CFD</h1>
+    <p class="sub">Innovación financiera local para la transformación resiliente de los sistemas
+      alimentarios en el Corredor Seco de Honduras · UNDP-HND-00588</p>
+  </div>
+  <div class="hdr-meta">
+    <div><b id="corte"></b></div>
+    <span class="chip lock">◆ Datos agregados · sin información personal</span>
+    <button class="tgl" id="theme" type="button">Modo oscuro</button>
+  </div>
+</header>
+
+<div class="fuente" id="fuente"><i class="dot"></i><span id="fuente-txt">Cargando…</span></div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="card">
+  <div class="sec-h">
+    <div><h2>Plan · meta · avance — I1 Encuesta a productores y hogares</h2>
+    <p class="sub">La barra es lo levantado; la marca vertical es lo que el calendario de campo
+      preveía a esta fecha; el riel completo es la meta comprometida.</p></div>
+  </div>
+  <div class="rows" id="bullet"></div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--avance)"></i> Avance real</span>
+    <span><i class="sw" style="background:var(--plan);width:4px;border-radius:2px"></i> Plan a la fecha</span>
+    <span><i class="sw" style="background:var(--track)"></i> Meta comprometida</span>
+  </div>
+  <div class="note brand" id="nota-plan"></div>
+</div>
+
+<div class="card">
+  <h2>Curva de avance acumulado</h2>
+  <p class="sub">Trayectoria planificada frente a la real, día a día, sobre la ventana de campo.</p>
+  <div id="curva"></div>
+  <div class="legend">
+    <span><i class="sw line" style="background:var(--avance)"></i> Avance acumulado</span>
+    <span><i class="sw line" style="background:var(--plan)"></i> Plan acumulado</span>
+    <span><i class="sw line" style="background:var(--axis)"></i> Meta comprometida</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Avance por municipio</h2>
+  <p class="sub" id="muni-sub"></p>
+  <div class="rows" id="muni"></div>
+  <div class="note" id="alerta-muni"></div>
+</div>
+
+<div class="card">
+  <h2>Producción diaria</h2>
+  <p class="sub">Encuestas válidas por día de campo, desde el inicio oficial del levantamiento.</p>
+  <div class="cols" id="dias"></div><div class="colx" id="diasx"></div>
+</div>
+
+<div class="card">
+  <h2>Cuotas de inclusión</h2>
+  <p class="sub">Pisos no excluyentes definidos en el diseño muestral, calculados sobre las encuestas válidas.</p>
+  <div class="meters" id="cuotas"></div>
+</div>
+
+<div class="card">
+  <h2>Estado de los demás instrumentos</h2>
+  <p class="sub">Sin base de datos al corte: se reporta estado, no se proyecta avance.
+    Cada instrumento entra al tablero en cuanto su pestaña exista en el libro de Drive.</p>
+  <table id="otros"><thead><tr><th>Instrumento</th><th>Unidades a levantar</th>
+    <th>Estado al corte</th><th class="n">Avance</th></tr></thead><tbody></tbody></table>
+</div>
+
+<div class="card">
+  <div class="sec-h">
+    <div><h2>Resultados preliminares — I1</h2><p class="sub" id="prelim-sub"></p></div>
+    <span class="tag">Preliminar · no representativo</span>
+  </div>
+  <div class="note">
+    <b>Léase con cautela.</b> Estas cifras describen únicamente los casos ya levantados, concentrados en
+    La Paz y sin ponderar. No constituyen la línea base: los valores oficiales de los indicadores se fijan
+    al cierre del levantamiento, con la muestra completa y los factores de expansión del CAN 2024.
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div><h3>Acceso a servicios financieros (últimos 12 meses)</h3><div class="rows" id="pr-acceso"></div></div>
+    <div><h3>¿Con quién? (menciones)</h3><div class="rows" id="pr-prov"></div></div>
+  </div>
+  <div class="grid g2" style="margin-top:20px">
+    <div><h3>Barreras de acceso al sistema financiero</h3><div class="rows" id="pr-barr"></div></div>
+    <div><h3>Barreras específicas al CFD</h3><div class="rows" id="pr-barrcfd"></div></div>
+  </div>
+  <table id="pr-tab" style="margin-top:22px"><thead><tr><th>Indicador preliminar</th>
+    <th class="n">Casos</th><th class="n">%</th></tr></thead><tbody></tbody></table>
+</div>
+
+<footer>
+  <p><b>Fuente:</b> KoboToolbox — instrumento I1 «Encuesta a productores y hogares rurales», vía el libro
+     de bases del proyecto en Google Drive. Metas y calendario: Plan de muestreo operativo, Guía de control
+     de recolección y presentación de coordinación del operativo de campo (Producto 1, CliO).
+     Universo y factores de expansión: Censo Agropecuario Nacional 2024 (INE).</p>
+  <p><b>Protección de datos:</b> este tablero publica exclusivamente agregados. La fuente que consulta es una
+     copia saneada de la base: no contiene nombres, teléfonos, correos, coordenadas GPS ni respuestas de texto
+     libre. Los envíos sin consentimiento informado se excluyen del conteo de encuestas válidas y se reportan
+     únicamente como tasa de no consentimiento.</p>
+  <p id="foot-gen"></p>
+</footer>
+</div>
+<div class="tt" id="tt"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN
+
+   FUENTE_CSV: enlace de la pestaña I1_PUB del libro de Drive, publicada en la web
+   como CSV (Archivo → Compartir → Publicar en la web → I1_PUB → .csv).
+   Con el campo vacío, el tablero usa la instantánea incrustada.
+   También admite  ...avance-lb-cfd.html?csv=<enlace>
+   ═══════════════════════════════════════════════════════════════════════════ */
+const FUENTE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1z3s_HHKXLJckZuVnqpLVCpL0fFxEXRXWqDmxIpw-gKVqxbIosyWZKeLuAqpg8uBVUZKD4vmbfrC8/pub?gid=1547471822&single=true&output=csv";
+
+const CFG = {
+  /* INICIO DEL CAMPO — parámetro maestro.
+     Todo el tablero se calcula desde esta fecha: los envíos anteriores en KoboToolbox
+     son pruebas de configuración del formulario y se descartan del conteo, del ritmo,
+     del plan y de la curva. Cambiar esta única fecha reencuadra el tablero completo. */
+  inicio: "2026-08-03",
+  metaTerr: {"La Paz":150, "Choluteca":150},   // I1, meta comprometida por territorio
+  piso: 15,                                     // piso mínimo de encuestas por municipio
+  /* Ventanas del calendario de campo, una por territorio. El plan acumulado se
+     interpola linealmente dentro de cada ventana; ninguna puede empezar antes de
+     `inicio`. Un territorio con ini/fin en null NO tiene calendario vigente: no se le
+     calcula plan y el tablero lo declara explícitamente en vez de inventar una cifra. */
+  planCampo: [
+    {terr:"La Paz",    ini:"2026-08-03", fin:"2026-08-09", n:150},
+    {terr:"Choluteca", ini:null,         fin:null,         n:150}
+  ],
+  fuentePlan: "calendario de campo vigente",
+  /* Bases para repartir la meta territorial entre municipios. La meta municipal NO es un
+     dato externo: se deriva aquí. Primero se garantiza el piso a cada municipio y el
+     excedente se reparte proporcionalmente a estas bases, de modo que la suma cuadre
+     exactamente con la meta del territorio. */
+  marcoLaPaz: {"Marcala":153,"Chinacla":122,"Santiago Puringla":120,"San Pedro de Tutule":95,
+               "San José":94,"La Paz":65,"Santa María":63,"Cane":55},
+  baseChol:  {"San Antonio de Flores":24,"San Isidro":24,"Pespire":24,"San José":9},
+  baseFuente: {
+    "La Paz":    "marco muestral de hogares MAMCEPAZ (base PDI 2023, 767 hogares con contacto)",
+    "Choluteca": "grupos activos del CFD MANORCHO (81 organizaciones depuradas) — proxy provisional mientras no llegue el marco de hogares"
+  },
+  cuotas: [["Mujeres",30,40,"muj"],["Jóvenes (< 30 años)",20,30,"jov"],["Población indígena",30,null,"ind"]],
+  otros: [
+    ["I2","Ficha de diagnóstico institucional CFD","2 (censo)","Documentación MANORCHO completa; MAMCEPAZ pendiente","wa"],
+    ["I3","Encuesta a organizaciones productivas","167 (81 Choluteca + 86 La Paz)","Marco depurado y cerrado; sin levantamiento iniciado","pe"],
+    ["I4","Censo a intermediarios financieros","Universo por depurar","Directorio en construcción","wa"],
+    ["I5","Grupos focales","8 (4 por territorio)","Sin convocatoria abierta","pe"],
+    ["I6","Entrevistas a intermediarios","≈ 4","Sin agenda confirmada","pe"],
+    ["I7","Entrevistas de gobernanza (+ I8/I10)","22 actores institucionales","Directorio cerrado; sin agenda confirmada","pe"],
+    ["I9","Catálogo de instrumentos financieros del CFD","2","Depende de I2","pe"]
+  ]
+};
+const SNAPSHOT = {"header":["¿La persona otorga su consentimiento para iniciar la encuesta?","0. Datos del informante. Sexo:","Edad (años)","¿Se identifica como parte de un pueblo indígena?","1. ¿En qué departamento se encuentra?","Encuestador que aplica la entrevista","Encuestador que aplica la entrevista","2. ¿En qué municipio vive?","2. ¿En qué municipio vive?","4. ¿Cuántas personas viven en el hogar?","6. En los últimos 12 meses, ¿usted o alguien del hogar solicitó o utilizó algún servicio financiero (formales o informales)?","7. ¿Qué servicios usó? (puede marcar varias)/Una cuenta de ahorro o cuenta de cheques","7. ¿Qué servicios usó? (puede marcar varias)/Un crédito o préstamo","7. ¿Qué servicios usó? (puede marcar varias)/Un seguro para la cosecha","7. ¿Qué servicios usó? (puede marcar varias)/Un seguro paramétrico/indexado (climático)","7. ¿Qué servicios usó? (puede marcar varias)/Servicios de pagos por el teléfono / billetera electrónica (Tigo Money, Tengo)","7. ¿Qué servicios usó? (puede marcar varias)/Un préstamo con un prestamista informal o particular","7. ¿Qué servicios usó? (puede marcar varias)/Recepción de remesas / envíos de dinero (Western Union, MoneyGram, banco u otro medio local)","7. ¿Qué servicios usó? (puede marcar varias)/Otro (especifique)","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/CFD MAMCEPAZ","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/CFD MANORCHO","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Caja rural","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Cooperativa de ahorro y crédito","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Banco","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Prestamista o comerciante informal","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Otro (especifique)","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/CFD (si no recuerda, repetir la definición de CFD)","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Caja rural formal","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Caja rural informal","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Casa de empeño formal","8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/Casa de empeño informal","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)/No tengo garantías o títulos de la tierra","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)/Los intereses son muy altos","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)/Piden muchos requisitos","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)/No hay una sucursal cerca de mi comunidad","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)/Los préstamos tardan y no llegan a tiempo para la siembra","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)/Ninguna, accedo sin problema","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)/Otro (especifique)","12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)/No sabe / no responde","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/No conozco los productos del CFD","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/No cumplo los requisitos de socio","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/El monto no se ajusta a mis posibilidades","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/Los plazos no se ajustan a mis tiempos","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/Las garantías o requisitos que piden","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/No entiendo bien estos productos","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/Temor a no poder pagar","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/No hay confianza","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/Ninguna, accedo sin problema","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/No aplica: no existe CFD activo en mi comunidad","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/Otro (especifique)","13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)/No sabe / no responde","14. ¿Su hogar tiene deudas activas?","15. ¿Aproximadamente qué parte del ingreso mensual del hogar se destina a pagar todas esas deudas?","16. Después de cubrir los gastos básicos del hogar (comida, servicios, transporte), ¿le queda dinero para pagar la cuota de un préstamo?","17. ¿Lleva algún registro o control de los ingresos y gastos del hogar?","18. Cuando le ofrecen un crédito, ¿sabe calcular cuánto pagará de interés en total?","19. ¿Ha recibido alguna capacitación o educación financiera?","22. ¿Aproximadamente qué parte del ingreso mensual del hogar se destina a la compra de alimentos?","33. ¿Piensa migrar fuera del municipio o del país en los próximos 12 meses?","_submission_time"],"rows":[["Sí","Hombre","19","No","La Paz","","","La Paz","","4","Sí","0","1","0","0","0","0","0","0","","","","","","","","","","","","","Los préstamos tardan y no llegan a tiempo para la siembra","0","0","0","0","1","0","0","0","No hay confianza / información suficiente","0","0","0","0","0","0","0","1","0","0","0","0","No sabe / no responde","","Sí, pero muy ajustado","No","No sabe / no responde","No sabe / no responde","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-07-31 17:33:14"],["Sí","Hombre","60","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos No hay una sucursal cerca de mi comunidad Los préstamos tardan y no llegan a tiempo para la siembra","0","0","1","1","1","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Menos de un cuarto (menos del 25 %)","Sí, pero ajustado","No","Más o menos","Sí","Menos de un cuarto (0 % – 25 %)","No","2026-08-03 13:23:08"],["Sí","Mujer","54","Sí","La Paz","Encuestador 1 - La Paz","","La Paz","","1","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","No sabe / no responde","0","0","0","0","0","0","0","1","No sabe / no responde","0","0","0","0","0","0","0","0","0","0","0","1","Sí, el hogar sí tiene alguna deuda activa","No sabe / no responde","No / casi nada","No","Más o menos","No","No sabe / no responde","No","2026-08-03 13:24:54"],["Sí","Mujer","39","Sí","La Paz","Encuestador 1 - La Paz","","La Paz","","5","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","No sabe / no responde","","No / casi nada","No","No","No","Entre un cuarto y la mitad (25 % – 50 %)","Sí","2026-08-03 13:34:20"],["Sí","Mujer","43","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","No sabe / no responde","0","0","0","0","0","0","0","1","No sabe / no responde","0","0","0","0","0","0","0","0","0","0","0","1","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 13:39:05"],["Sí","Mujer","49","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","Los intereses son muy altos Los préstamos tardan y no llegan a tiempo para la siembra Otro (especifique)","0","1","0","0","1","0","1","0","El monto no se ajusta a mis posibilidades Los plazos no se ajustan a mis tiempos","0","0","1","1","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Menos de un cuarto (menos del 25 %)","Sí, pero ajustado","Sí, por escrito","No","Sí","Menos de un cuarto (0 % – 25 %)","No","2026-08-03 13:42:17"],["Sí","Mujer","20","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","8","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","Ninguna, accedo sin problema","0","0","0","0","0","1","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, con holgura (me sobra)","Sí, mentalmente","Sí","No","Entre un cuarto y la mitad (25 % – 50 %)","Sí","2026-08-03 13:45:11"],["Sí","Mujer","35","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","3","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","No tengo garantías o títulos de la tierra","1","0","0","0","0","0","0","0","No conozco los productos del CFD No entiendo bien estos productos","1","0","0","0","0","1","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Más de la mitad (más del 50 %)","Sí, pero ajustado","No","Sí","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 13:58:53"],["Sí","Mujer","45","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD El monto no se ajusta a mis posibilidades Los plazos no se ajustan a mis tiempos","1","0","1","1","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero muy ajustado","Sí, mentalmente","No","No","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 14:09:19"],["Sí","Mujer","36","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","No","","","","","","","","","","","","","","","","","","","","","No tengo garantías o títulos de la tierra No hay una sucursal cerca de mi comunidad","1","0","0","1","0","0","0","0","No conozco los productos del CFD El monto no se ajusta a mis posibilidades","1","0","1","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Más de la mitad (más del 50 %)","Sí, pero muy ajustado","Sí, por escrito","Sí","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 14:11:43"],["Sí","Hombre","52","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","Los intereses son muy altos Piden muchos requisitos Los préstamos tardan y no llegan a tiempo para la siembra","0","1","1","0","1","0","0","0","No aplica: no existe CFD activo en mi comunidad","0","0","0","0","0","0","0","0","0","1","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","No / casi nada","Sí, mentalmente","Más o menos","No","Menos de un cuarto (0 % – 25 %)","No","2026-08-03 14:14:07"],["Sí","Mujer","27","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No sabe / no responde","0","0","0","0","0","0","0","0","0","0","0","1","El hogar no tiene ninguna deuda activa","","Sí, con holgura (me sobra)","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 14:48:21"],["Sí","Mujer","20","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","Ninguna, accedo sin problema","0","0","0","0","0","1","0","0","No aplica: no existe CFD activo en mi comunidad","0","0","0","0","0","0","0","0","0","1","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","No","No","No","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 14:58:23"],["Sí","Mujer","42","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","Sí","1","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","Los préstamos tardan y no llegan a tiempo para la siembra","0","0","0","0","1","0","0","0","Temor a no poder pagar No hay confianza","0","0","0","0","0","0","1","1","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Menos de un cuarto (menos del 25 %)","Sí, pero muy ajustado","Sí, mentalmente","No","Sí","Más de tres cuartos (75 % – 100 %)","Sí","2026-08-03 15:14:55"],["Sí","Hombre","78","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","Sí","0","1","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","0","0","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","Más o menos","Sí","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 15:30:02"],["Sí","Hombre","51","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","Sí","No","Entre la mitad y tres cuartos (50 % – 75 %)","Sí","2026-08-03 15:41:13"],["Sí","Hombre","66","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","No tengo garantías o títulos de la tierra Los intereses son muy altos Piden muchos requisitos","1","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","No","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 15:46:55"],["Sí","Mujer","47","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, por escrito","Más o menos","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 15:48:08"],["Sí","Hombre","35","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","7","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos","0","1","0","0","0","0","0","0","No conozco los productos del CFD Temor a no poder pagar","1","0","0","0","0","0","1","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","Más o menos","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 15:53:38"],["Sí","Hombre","67","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","1","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No / casi nada","No","Sí","No","No sabe / no responde","No","2026-08-03 15:54:18"],["Sí","Mujer","42","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","Los intereses son muy altos Piden muchos requisitos Otro (especifique)","0","1","1","0","0","0","1","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Menos de un cuarto (menos del 25 %)","No / casi nada","Sí, mentalmente","No","No","Menos de un cuarto (0 % – 25 %)","No","2026-08-03 16:01:53"],["Sí","Mujer","44","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","Sí","1","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","0","0","No tengo garantías o títulos de la tierra Piden muchos requisitos","1","0","1","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Más de la mitad (más del 50 %)","Sí, pero ajustado","Sí, por escrito","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 16:02:41"],["Sí","Mujer","38","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","No","","","","","","","","","","","","","","","","","","","","","No tengo garantías o títulos de la tierra Los intereses son muy altos","1","1","0","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 16:06:42"],["Sí","Hombre","40","Sí","La Paz","Encuestador 1 - La Paz","","San José","","8","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos No hay una sucursal cerca de mi comunidad","0","1","1","1","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","Sí, mentalmente","Sí","No","Entre la mitad y tres cuartos (50 % – 75 %)","Sí","2026-08-03 16:07:48"],["Sí","Mujer","26","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","No","","","","","","","","","","","","","","","","","","","","","No tengo garantías o títulos de la tierra Los intereses son muy altos Piden muchos requisitos","1","1","1","0","0","0","0","0","No conozco los productos del CFD No entiendo bien estos productos","1","0","0","0","0","1","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","Sí, mentalmente","No","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 16:12:43"],["Sí","Mujer","47","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","Sí","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 16:14:53"],["Sí","Mujer","60","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos","0","1","0","0","0","0","0","0","No cumplo los requisitos de socio","0","1","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","No","No sabe / no responde","No","Entre la mitad y tres cuartos (50 % – 75 %)","Sí","2026-08-03 16:15:21"],["Sí","Hombre","35","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","3","No","","","","","","","","","","","","","","","","","","","","","Los préstamos tardan y no llegan a tiempo para la siembra","0","0","0","0","1","0","0","0","No entiendo bien estos productos","0","0","0","0","0","1","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No","No sabe / no responde","No sabe / no responde","No sabe / no responde","No","2026-08-03 16:17:35"],["Sí","Hombre","58","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","7","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, por escrito","Más o menos","No","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 16:21:54"],["Sí","Hombre","39","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","No","","","","","","","","","","","","","","","","","","","","","No hay una sucursal cerca de mi comunidad","0","0","0","1","0","0","0","0","No conozco los productos del CFD Los plazos no se ajustan a mis tiempos","1","0","0","1","0","0","0","0","0","0","0","0","No sabe / no responde","","Sí, pero muy ajustado","No","No","No sabe / no responde","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 16:22:28"],["Sí","Hombre","61","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","Sí","0","1","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","0","0","Los intereses son muy altos Piden muchos requisitos Otro (especifique)","0","1","1","0","0","0","1","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","No / casi nada","Sí, por escrito","No","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 16:25:14"],["Sí","Hombre","38","No","La Paz","Encuestador 1 - La Paz","","Marcala","","12","No","","","","","","","","","","","","","","","","","","","","","No hay una sucursal cerca de mi comunidad","0","0","0","1","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","Sí, mentalmente","No sabe / no responde","No sabe / no responde","Entre la mitad y tres cuartos (50 % – 75 %)","Sí","2026-08-03 16:25:14"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 16:25:27"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 16:25:33"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 16:25:39"],["Sí","Hombre","74","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos No hay una sucursal cerca de mi comunidad Los préstamos tardan y no llegan a tiempo para la siembra","0","1","0","1","1","0","0","0","Temor a no poder pagar No hay confianza","0","0","0","0","0","0","1","1","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero muy ajustado","No","No","No","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 16:28:33"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 16:30:29"],["Sí","Hombre","64","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","No","","","","","","","","","","","","","","","","","","","","","Los préstamos tardan y no llegan a tiempo para la siembra","0","0","0","0","1","0","0","0","No conozco los productos del CFD No cumplo los requisitos de socio","1","1","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No sabe / no responde","No","Sí","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 16:33:28"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 16:33:36"],["Sí","Mujer","25","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","No","No","No","Menos de un cuarto (0 % – 25 %)","No","2026-08-03 16:36:58"],["Sí","Hombre","33","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","Sí","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","No tengo garantías o títulos de la tierra Los intereses son muy altos Los préstamos tardan y no llegan a tiempo para la siembra","1","1","0","0","1","0","0","0","No cumplo los requisitos de socio","0","1","0","0","0","0","0","0","0","0","0","0","No sabe / no responde","","No / casi nada","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","Sí","2026-08-03 16:40:49"],["Sí","Hombre","40","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos","0","1","0","0","0","0","0","0","No conozco los productos del CFD Los plazos no se ajustan a mis tiempos","1","0","0","1","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero muy ajustado","No","Sí","No","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 16:50:38"],["Sí","Hombre","56","Sí","La Paz","Encuestador 2 - La Paz","","Marcala","","5","No","","","","","","","","","","","","","","","","","","","","","No hay una sucursal cerca de mi comunidad","0","0","0","1","0","0","0","0","No hay confianza","0","0","0","0","0","0","0","1","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","No","No","No sabe / no responde","Más de tres cuartos (75 % – 100 %)","Sí","2026-08-03 16:57:12"],["Sí","Mujer","50","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","Sí","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","Piden muchos requisitos","0","0","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero ajustado","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 16:57:46"],["Sí","Hombre","66","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","8","No","","","","","","","","","","","","","","","","","","","","","Los préstamos tardan y no llegan a tiempo para la siembra","0","0","0","0","1","0","0","0","Los plazos no se ajustan a mis tiempos","0","0","0","1","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","Más o menos","No sabe / no responde","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 17:04:58"],["Sí","Hombre","40","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 17:08:00"],["Sí","Mujer","70","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","9","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 17:08:04"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 17:08:22"],["Sí","Hombre","29","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos Otro (especifique)","0","1","1","0","0","0","1","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","Sí, mentalmente","No","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 17:11:46"],["Sí","Hombre","25","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","No sabe / no responde","0","0","0","0","0","0","0","1","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","No sabe / no responde","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 17:13:27"],["Sí","Prefiere no decir","54","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","6","No","","","","","","","","","","","","","","","","","","","","","No hay una sucursal cerca de mi comunidad","0","0","0","1","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 17:14:10"],["Sí","Hombre","58","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","14","Sí","0","1","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","0","0","No hay una sucursal cerca de mi comunidad","0","0","0","1","0","0","0","0","Los plazos no se ajustan a mis tiempos","0","0","0","1","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No","No","No sabe / no responde","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 17:17:08"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 17:17:15"],["Sí","Hombre","56","No","La Paz","Encuestador 1 - La Paz","","Marcala","","8","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","No entiendo bien estos productos","0","0","0","0","0","1","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 17:20:20"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 17:20:25"],["Sí","Hombre","55","No","La Paz","Encuestador 1 - La Paz","","Marcala","","5","No","","","","","","","","","","","","","","","","","","","","","No hay una sucursal cerca de mi comunidad","0","0","0","1","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","No","No sabe / no responde","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 17:23:50"],["Sí","Mujer","30","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","4","Sí","0","1","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","0","Los intereses son muy altos Piden muchos requisitos Otro (especifique)","0","1","1","0","0","0","1","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","No / casi nada","Sí, por escrito","No","No","Menos de un cuarto (0 % – 25 %)","No","2026-08-03 17:24:03"],["Sí","Hombre","56","No","La Paz","Encuestador 1 - La Paz","","Marcala","","6","Sí","0","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","Piden muchos requisitos","0","0","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","Sí","2026-08-03 17:29:38"],["Sí","Mujer","49","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","5","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Más de la mitad (más del 50 %)","Sí, pero muy ajustado","No","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","Sí","2026-08-03 17:33:00"],["Sí","Mujer","33","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","9","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No","Más o menos","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 17:35:22"],["Sí","Hombre","22","No","La Paz","Encuestador 1 - La Paz","","Marcala","","9","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","Sí","2026-08-03 17:40:15"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 17:44:56"],["Sí","Hombre","30","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","8","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","No","Sí","No","Menos de un cuarto (0 % – 25 %)","No","2026-08-03 18:07:06"],["Sí","Hombre","33","No","La Paz","Encuestador 1 - La Paz","","Chinacla","","8","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","Los plazos no se ajustan a mis tiempos","0","0","0","1","0","0","0","0","0","0","0","0","No sabe / no responde","","Sí, pero muy ajustado","No","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 18:11:23"],["Sí","Mujer","34","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","5","Sí","1","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","0","0","Los intereses son muy altos","0","1","0","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero ajustado","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 18:11:29"],["Sí","Hombre","80","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","8","Sí","1","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","0","0","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","No sabe / no responde","","No sabe / no responde","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 18:15:44"],["Sí","Mujer","40","Sí","La Paz","Encuestador 1 - La Paz","","Marcala","","7","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos","0","1","0","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","No sabe / no responde","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 18:17:00"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 18:17:14"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 18:17:33"],["Sí","Hombre","55","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","3","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","No","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 18:17:44"],["Sí","Hombre","30","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","8","Sí","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","No tengo garantías o títulos de la tierra","1","0","0","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero ajustado","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 18:24:14"],["Sí","Hombre","25","No","La Paz","Encuestador 1 - La Paz","","Chinacla","","6","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero muy ajustado","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 18:26:42"],["Sí","Mujer","55","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","4","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos No hay una sucursal cerca de mi comunidad","0","0","1","1","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","No sabe / no responde","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 18:33:03"],["Sí","Mujer","30","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","2","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","Sí, mentalmente","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 18:48:38"],["Sí","Hombre","32","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","6","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos","0","1","0","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","No","Sí","Sí","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 18:56:59"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 19:01:23"],["Sí","Hombre","35","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","8","No","","","","","","","","","","","","","","","","","","","","","No tengo garantías o títulos de la tierra Los intereses son muy altos Piden muchos requisitos","1","1","1","0","0","0","0","0","No cumplo los requisitos de socio","0","1","0","0","0","0","0","0","0","0","0","0","No sabe / no responde","","No sabe / no responde","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 19:03:36"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 19:03:41"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 19:27:21"],["Sí","Hombre","55","Sí","La Paz","Encuestador 1 - La Paz","","Chinacla","","5","Sí","0","0","0","1","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","Los intereses son muy altos","0","1","0","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero ajustado","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 19:33:09"],["Sí","Hombre","20","Sí","La Paz","Encuestador 1 - La Paz","","San José","","4","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos","0","1","0","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","Sí, por escrito","Sí","Sí","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 20:34:26"],["Sí","Mujer","36","Sí","La Paz","Encuestador 1 - La Paz","","San José","","5","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos","0","1","0","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 20:51:52"],["Sí","Hombre","47","Sí","La Paz","Encuestador 1 - La Paz","","San José","","7","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, mentalmente","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 21:14:15"],["Sí","Mujer","49","Sí","La Paz","Encuestador 1 - La Paz","","San José","","5","No","","","","","","","","","","","","","","","","","","","","","No tengo garantías o títulos de la tierra Los intereses son muy altos Piden muchos requisitos","1","1","1","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","Sí, por escrito","Más o menos","No","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 21:25:41"],["Sí","Mujer","50","No","La Paz","Encuestador 1 - La Paz","","San José","","5","Sí","0","1","0","0","0","0","0","0","0","0","0","0","1","0","0","0","0","0","0","0","Los intereses son muy altos","0","1","0","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No / casi nada","Sí, mentalmente","Sí","No","Entre un cuarto y la mitad (25 % – 50 %)","No","2026-08-03 21:26:20"],["Sí","Hombre","32","Sí","La Paz","Encuestador 1 - La Paz","","San José","","4","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","No sabe / no responde","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 21:27:58"],["Sí","Mujer","58","Sí","La Paz","Encuestador 1 - La Paz","","San José","","4","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos No hay una sucursal cerca de mi comunidad","0","1","0","1","0","0","0","0","Los plazos no se ajustan a mis tiempos Temor a no poder pagar","0","0","0","1","0","0","1","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero ajustado","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 21:32:32"],["Sí","Hombre","28","Sí","La Paz","Encuestador 1 - La Paz","","San José","","5","No","","","","","","","","","","","","","","","","","","","","","Piden muchos requisitos","0","0","1","0","0","0","0","0","El monto no se ajusta a mis posibilidades","0","0","1","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","Sí, mentalmente","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 21:37:01"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 21:37:50"],["Sí","Mujer","45","Sí","La Paz","Encuestador 1 - La Paz","","San José","","5","Sí","1","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","1","0","0","0","Piden muchos requisitos No hay una sucursal cerca de mi comunidad","0","0","1","1","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","Sí, el hogar sí tiene alguna deuda activa","Entre un cuarto y la mitad (25 % – 50 %)","Sí, pero ajustado","Sí, mentalmente","Más o menos","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 21:39:03"],["Sí","Mujer","28","Sí","La Paz","Encuestador 1 - La Paz","","San José","","4","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos No hay una sucursal cerca de mi comunidad Los préstamos tardan y no llegan a tiempo para la siembra","0","1","0","1","1","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No / casi nada","No","No sabe / no responde","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 21:40:42"],["Sí","Hombre","83","Sí","La Paz","Encuestador 1 - La Paz","","San José","","6","No","","","","","","","","","","","","","","","","","","","","","Los intereses son muy altos Piden muchos requisitos","0","1","1","0","0","0","0","0","No entiendo bien estos productos","0","0","0","0","0","1","0","0","0","0","0","0","No sabe / no responde","","No sabe / no responde","Sí, mentalmente","Más o menos","No","Más de tres cuartos (75 % – 100 %)","Sí","2026-08-03 21:43:20"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 21:43:35"],["Sí","Hombre","40","No","La Paz","Encuestador 1 - La Paz","","San José","","8","No","","","","","","","","","","","","","","","","","","","","","No hay una sucursal cerca de mi comunidad","0","0","0","1","0","0","0","0","No entiendo bien estos productos","0","0","0","0","0","1","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","Sí, pero muy ajustado","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 21:53:50"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 21:53:51"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 21:55:18"],["Sí","Mujer","75","Sí","La Paz","Encuestador 1 - La Paz","","Santa María","","1","No","","","","","","","","","","","","","","","","","","","","","No sabe / no responde","0","0","0","0","0","0","0","1","No aplica: no existe CFD activo en mi comunidad","0","0","0","0","0","0","0","0","0","1","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","No","2026-08-03 22:17:33"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 22:20:47"],["No","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","2026-08-03 22:20:51"],["Sí","Mujer","16","Sí","La Paz","Encuestador 1 - La Paz","","Santa María","","4","No","","","","","","","","","","","","","","","","","","","","","No sabe / no responde","0","0","0","0","0","0","0","1","No sabe / no responde","0","0","0","0","0","0","0","0","0","0","0","1","El hogar no tiene ninguna deuda activa","","No sabe / no responde","Sí, por escrito","No","No","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 22:24:30"],["Sí","Mujer","40","Sí","La Paz","Encuestador 1 - La Paz","","Santa María","","4","No","","","","","","","","","","","","","","","","","","","","","No tengo garantías o títulos de la tierra Los intereses son muy altos Piden muchos requisitos","1","1","1","0","0","0","0","0","No conozco los productos del CFD","1","0","0","0","0","0","0","0","0","0","0","0","El hogar no tiene ninguna deuda activa","","No / casi nada","No","No","No","Más de tres cuartos (75 % – 100 %)","No","2026-08-03 22:27:48"],["Sí","Mujer","50","Sí","La Paz","Encuestador 1 - La Paz","","Santa María","","5","No","","","","","","","","","","","","","","","","","","","","","Los préstamos tardan y no llegan a tiempo para la siembra","0","0","0","0","1","0","0","0","No hay confianza","0","0","0","0","0","0","0","1","0","0","0","0","El hogar no tiene ninguna deuda activa","","No sabe / no responde","No","No","No","Entre la mitad y tres cuartos (50 % – 75 %)","Tal vez","2026-08-03 22:32:20"]],"generado":"2026-08-03","origen":"8e4c2db4-I1__Encuesta_a_productores_y_hogares_rurales__all_versions__Spanish_es__20260803223944.xlsx"};
+
+/* ─────────────────────────────── utilidades ─────────────────────────────── */
+const $ = s => document.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!==undefined)e.innerHTML=h; return e;};
+const pct = (a,b)=> b? Math.round(1000*a/b)/10 : 0;
+const fmt = n => new Intl.NumberFormat('es-HN').format(n);
+const dm  = s => s? s.slice(8,10)+'/'+s.slice(5,7) : '';
+const dias = s => Math.floor(Date.parse(s+'T00:00:00Z')/864e5);
+const fecha = d => new Date(d*864e5).toISOString().slice(0,10);
+const tt = $('#tt');
+function tip(node,text){
+  node.addEventListener('mouseenter',()=>{tt.textContent=text;tt.style.opacity=1;});
+  node.addEventListener('mousemove',e=>{tt.style.left=Math.min(innerWidth-190,e.clientX+14)+'px';
+    tt.style.top=(e.clientY-38)+'px';});
+  node.addEventListener('mouseleave',()=>{tt.style.opacity=0;});
+}
+function parseCSV(txt){
+  const out=[]; let row=[],f='',q=false;
+  txt = txt.replace(/^﻿/,'');
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i];
+    if(q){ if(c==='"'){ if(txt[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(f); f=''; }
+    else if(c==='\n'){ row.push(f); out.push(row); row=[]; f=''; }
+    else if(c!=='\r') f+=c;
+  }
+  if(f.length||row.length){ row.push(f); out.push(row); }
+  return out.filter(r=>r.some(v=>v!==''));
+}
+
+/* ──────────────────────────── plan de campo ─────────────────────────────── */
+/* Acumulado planificado hasta una fecha, interpolando dentro de cada ventana. */
+function planAcum(f, terr){
+  const d=dias(f), base=dias(CFG.inicio);
+  return CFG.planCampo.filter(v=>v.ini&&v.fin&&(!terr||v.terr===terr)).reduce((t,v)=>{
+    const a=Math.max(dias(v.ini), base), b=Math.max(dias(v.fin), a);
+    if(d<a) return t;
+    if(d>=b) return t+v.n;
+    return t + Math.round(v.n*(d-a+1)/(b-a+1));
+  },0);
+}
+/* ¿Este territorio tiene calendario vigente? */
+const conPlan = t => CFG.planCampo.some(v=>v.terr===t && v.ini && v.fin);
+const metaConPlan = () => CFG.planCampo.filter(v=>v.ini&&v.fin).reduce((a,v)=>a+v.n,0);
+const sinPlan = () => CFG.planCampo.filter(v=>!v.ini||!v.fin).map(v=>v.terr);
+
+/* ───────────────────────────── agregación ───────────────────────────────── */
+const MUNI_TERR = (()=>{const m={};
+  Object.keys(CFG.marcoLaPaz).forEach(k=>m[k]='La Paz');
+  m['Cané']='La Paz'; m['Santa Maria']='La Paz';
+  Object.keys(CFG.baseChol).forEach(k=>m[k]='Choluteca'); return m;})();
+
+/* Reparto proporcional por restos mayores: el total siempre cuadra con la meta. */
+function proporcional(meta, base){
+  const tot=Object.values(base).reduce((a,b)=>a+b,0), crudo={}, ent={};
+  for(const k in base){ crudo[k]=meta*base[k]/tot; ent[k]=Math.floor(crudo[k]); }
+  const resto = meta - Object.values(ent).reduce((a,b)=>a+b,0);
+  Object.keys(crudo).sort((a,b)=>(crudo[b]-ent[b])-(crudo[a]-ent[a])).slice(0,resto).forEach(k=>ent[k]++);
+  return ent;
+}
+/* Reparto proporcional CON piso garantizado: primero se asegura el mínimo por nodo y
+   solo el excedente se reparte según la base. Así ningún municipio queda por debajo del
+   piso muestral y la suma sigue siendo exactamente la meta del territorio.
+   Si el piso no cabe en la meta (piso × municipios > meta), cae a proporcional puro. */
+function repartir(meta, base, piso){
+  const n=Object.keys(base).length;
+  if(!piso || piso*n > meta) return proporcional(meta, base);
+  const ext=proporcional(meta - piso*n, base), out={};
+  for(const k in base) out[k]=piso+ext[k];
+  return out;
+}
+
+function agregar(header, rows){
+  const P={cons:'¿La persona otorga su consentimiento',sexo:'0. Datos del informante. Sexo',
+    edad:'Edad (años)',ind:'¿Se identifica como parte de un pueblo indígena?',
+    dep:'1. ¿En qué departamento',enc:'Encuestador que aplica',mun:'2. ¿En qué municipio',
+    p6:'6. En los últimos 12 meses',p14:'14. ¿Su hogar tiene deudas',p17:'17. ¿Lleva algún registro',
+    p19:'19. ¿Ha recibido alguna capacitación',p33:'33. ¿Piensa migrar',ts:'_submission_time'};
+  const M={};
+  for(const k in P) M[k]=header.map((h,i)=>h.startsWith(P[k])&&!h.includes('/')?i:-1).filter(i=>i>=0);
+  const mult=pre=>header.map((h,i)=>h.startsWith(pre)&&h.includes('/')?i:-1).filter(i=>i>=0);
+  const MU={p7:mult('7. ¿Qué servicios usó? (puede marcar varias)/'),
+    p8:mult('8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)/'),
+    p12:mult('12. ¿Cuáles son las principales razones por las que NO suele acceder'),
+    p13:mult('13. Y específicamente para acceder a productos del CFD')};
+  const v=(r,k)=>{for(const i of (M[k]||[])) if(r[i]) return String(r[i]).trim(); return '';};
+  const lst=(r,k)=>MU[k].filter(i=>String(r[i]).trim()==='1').map(i=>header[i].split('/').pop());
+
+  let pruebas=0; const recs=[];
+  rows.forEach(r=>{
+    const f=(v(r,'ts')||'').slice(0,10);
+    if(!f || f<CFG.inicio){ pruebas++; return; }
+    const mun=v(r,'mun'), dep=v(r,'dep'), edad=parseInt(v(r,'edad'),10);
+    recs.push({fecha:f,cons:v(r,'cons'),muni:mun,
+      terr:(dep==='La Paz'||dep==='Choluteca')?dep:(MUNI_TERR[mun]||''),
+      enc:v(r,'enc')||'(sin registrar)',sexo:v(r,'sexo'),edad:isNaN(edad)?null:edad,
+      ind:v(r,'ind'),p6:v(r,'p6'),p14:v(r,'p14'),p17:v(r,'p17'),p19:v(r,'p19'),p33:v(r,'p33'),
+      p7:lst(r,'p7'),p8:lst(r,'p8'),p12:lst(r,'p12'),p13:lst(r,'p13')});
+  });
+
+  const val=recs.filter(x=>x.cons==='Sí'), n=val.length, neg=recs.length-n;
+  const cnt=(a,fn)=>{const c={};a.forEach(x=>{const k=fn(x); if(k)c[k]=(c[k]||0)+1;});return c;};
+  const cntM=(a,k)=>{const c={};a.forEach(x=>x[k].forEach(y=>c[y]=(c[y]||0)+1));
+    return Object.entries(c).sort((x,y)=>y[1]-x[1]);};
+
+  const metas={'La Paz':repartir(CFG.metaTerr['La Paz'],CFG.marcoLaPaz,CFG.piso),
+               'Choluteca':repartir(CFG.metaTerr['Choluteca'],CFG.baseChol,CFG.piso)};
+  const logM=cnt(val,x=>x.terr+'|'+x.muni), municipios=[];
+  for(const t in metas) for(const m in metas[t])
+    municipios.push({terr:t,muni:m,meta:metas[t][m],logrado:logM[t+'|'+m]||0,piso:CFG.piso});
+
+  const porDia=cnt(val,x=>x.fecha), ds=Object.keys(porDia).sort();
+  const corte = ds.length? ds[ds.length-1] : CFG.inicio;
+  const ritmo = ds.length? Math.round(10*n/ds.length)/10 : 0;
+  const metaTot=Object.values(CFG.metaTerr).reduce((a,b)=>a+b,0);
+
+  /* serie acumulada plan vs avance sobre toda la ventana de campo */
+  const ini=dias(CFG.inicio);
+  const fin=Math.max(dias(corte), ...CFG.planCampo.filter(v=>v.fin).map(v=>dias(v.fin)));
+  const serie=[]; let acum=0;
+  for(let d=ini; d<=fin; d++){
+    const f=fecha(d); acum += (porDia[f]||0);
+    serie.push({f, plan:planAcum(f), real: d<=dias(corte)? acum : null});
+  }
+  const planHoy=planAcum(corte);
+
+  const cq={muj:val.filter(x=>x.sexo==='Mujer').length,
+            jov:val.filter(x=>x.edad!==null&&x.edad<30).length,
+            ind:val.filter(x=>x.ind==='Sí').length};
+  const prov=cntM(val,'p8');
+  const F=['Caja rural formal','Cooperativa de ahorro y crédito','Banco','CFD MAMCEPAZ','CFD MANORCHO','Caja rural','Casa de empeño formal'];
+  const I=['Prestamista o comerciante informal','Caja rural informal','Casa de empeño informal'];
+  const sum=(a,s)=>a.filter(([k])=>s.includes(k)).reduce((t,[,x])=>t+x,0);
+
+  return {
+    n, registros:recs.length, rechazos:neg, pruebas,
+    tasa_rechazo: recs.length? Math.round(1000*neg/recs.length)/10 : 0,
+    corte, inicio:CFG.inicio, metaTot, pct:pct(n,metaTot), restante:metaTot-n,
+    planHoy, brecha:n-planHoy, cumpl:pct(n,planHoy), serie,
+    territorio: Object.keys(CFG.metaTerr).map(t=>({terr:t,meta:CFG.metaTerr[t],
+      logrado:val.filter(x=>x.terr===t).length,
+      plan: conPlan(t)? planAcum(corte,t) : null})),
+    metaPlan: metaConPlan(), sinPlan: sinPlan(),
+    municipios, muni_cubiertos:municipios.filter(m=>m.logrado>0).length, muni_total:municipios.length,
+    dias: ds.map(d=>({fecha:d,n:porDia[d]})), ritmo,
+    dias_faltan:(ritmo && ds.length>=3)? Math.round((metaTot-n)/ritmo) : null,
+    encuestadores: Object.entries(cnt(val,x=>x.enc)).sort((a,b)=>b[1]-a[1]).map(([nombre,c])=>({nombre,n:c})),
+    cuotas: CFG.cuotas.map(([label,piso,meta,key])=>({label,piso,meta,n:cq[key],pct:pct(cq[key],n)})),
+    prelim:{acceso_si:cnt(val,x=>x.p6)['Sí']||0, formal:sum(prov,F), informal:sum(prov,I),
+      proveedores:prov, barreras:cntM(val,'p12'), barreras_cfd:cntM(val,'p13'),
+      deuda:cnt(val,x=>x.p14), registro:cnt(val,x=>x.p17),
+      capacitacion:cnt(val,x=>x.p19), migracion:cnt(val,x=>x.p33)}
+  };
+}
+
+/* ───────────────────────────── componentes ─────────────────────────────── */
+function barra(cont,o){
+  const r=el('div','row'); r.append(el('div','name',o.name));
+  const t=el('div','track');
+  const over=o.meta && o.logrado>o.meta;
+  const f=el('i','fill'+(o.logrado===0?' zero':'')+(over?' over':''));
+  f.style.width=(o.logrado===0?0:Math.max(1.2,Math.min(100,100*o.logrado/o.meta)))+'%';
+  if(o.color) f.style.background=o.color;
+  t.append(f);
+  if(o.piso && o.meta && o.piso<=o.meta){const m=el('span','mark');
+    m.style.left=(100*o.piso/o.meta)+'%'; m.dataset.l='piso '+o.piso; t.append(m);}
+  if(o.plan!=null && o.meta){const p=el('span','plan');
+    p.style.left=Math.min(100,100*o.plan/o.meta)+'%';
+    if(o.planLbl!==false) p.dataset.l='plan '+fmt(o.plan);
+    t.append(p);}
+  let txt=o.name.replace(/<[^>]+>/g,'')+'\nAvance: '+fmt(o.logrado)+' de '+fmt(o.meta)+' ('+pct(o.logrado,o.meta)+'%)';
+  if(o.plan!=null) txt+='\nPlan a la fecha: '+fmt(o.plan)+'\nBrecha: '+(o.logrado-o.plan>=0?'+':'')+fmt(o.logrado-o.plan);
+  else if(o.planNota) txt+='\nSin calendario de campo vigente';
+  if(over) txt+='\nSobrecobertura de '+(o.logrado-o.meta);
+  tip(t,txt);
+  r.append(t);
+  const num=el('div','num',fmt(o.logrado)+' <i>/'+fmt(o.meta)+'</i>');
+  if(o.plan!=null){const d=o.logrado-o.plan;
+    num.append(el('em', d<0?'neg':'pos', (d>=0?'+':'')+fmt(d)+' vs plan'));}
+  else if(o.planNota) num.append(el('em','muted',o.planNota));
+  r.append(num); cont.append(r); return r;
+}
+
+/* curva acumulada: plan vs avance real, con meta como referencia */
+function curva(cont, D){
+  const W=1000, H=300, L=46, R=26, T=26, B=34;
+  const s=D.serie, crudo=Math.max(D.metaTot, ...s.map(p=>p.plan))*1.06;
+  const paso=Math.pow(10,Math.floor(Math.log10(crudo)))/2;
+  const max=Math.ceil(crudo/paso)*paso;
+  const x=i=> L + i*(W-L-R)/Math.max(1,s.length-1);
+  const y=v=> T + (H-T-B)*(1-v/max);
+  const ns='http://www.w3.org/2000/svg';
+  const mk=(t,a)=>{const e=document.createElementNS(ns,t); for(const k in a)e.setAttribute(k,a[k]); return e;};
+  const svg=mk('svg',{class:'curva',viewBox:`0 0 ${W} ${H}`,preserveAspectRatio:'none'});
+
+  [0,.25,.5,.75,1].forEach(p=>{const v=Math.round(max*p);
+    svg.append(mk('line',{class:'gl',x1:L,x2:W-R,y1:y(v),y2:y(v)}));
+    const tx=mk('text',{x:L-8,y:y(v)+4,'text-anchor':'end'}); tx.textContent=fmt(v); svg.append(tx);});
+
+  // meta comprometida
+  svg.append(mk('line',{class:'ax',x1:L,x2:W-R,y1:y(D.metaTot),y2:y(D.metaTot),
+    'stroke-dasharray':'6 4'}));
+  const t1=mk('text',{x:L+6,y:y(D.metaTot)-7,class:'lbl'}); t1.setAttribute('fill','var(--ink-2)');
+  t1.textContent='Meta comprometida · '+fmt(D.metaTot); svg.append(t1);
+
+  const iHoy=s.findIndex(p=>p.f===D.corte);
+  if(iHoy>=0){ svg.append(mk('line',{class:'hoy',x1:x(iHoy),x2:x(iHoy),y1:T,y2:H-B}));
+    const borde = iHoy===0 ? 'start' : (iHoy===s.length-1 ? 'end' : 'middle');
+    const t=mk('text',{x:x(iHoy)+(borde==='start'?5:borde==='end'?-5:0),y:T-6,'text-anchor':borde});
+    t.textContent='corte'; svg.append(t);}
+
+  const linea=(key,color)=>{
+    const pts=s.map((p,i)=>p[key]==null?null:[x(i),y(p[key])]).filter(Boolean);
+    if(!pts.length) return;
+    svg.append(mk('path',{d:'M'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join('L'),
+      fill:'none',stroke:color,'stroke-width':2.5,'stroke-linejoin':'round','stroke-linecap':'round'}));
+  };
+  linea('plan','var(--plan)');
+  linea('real','var(--avance)');
+
+  /* Las etiquetas se anclan al día de corte: ahí es donde plan y avance se comparan.
+     Si quedan a menos de 17 px, se separan para que ninguna tape a la otra. */
+  const j = iHoy>=0? iHoy : s.length-1;
+  const marcas=[
+    {v:s[j].plan, txt:'Plan '+fmt(D.planHoy), col:'var(--plan)'},
+    {v:s[j].real, txt:'Avance '+fmt(D.n),     col:'var(--avance)'}
+  ].filter(m=>m.v!=null);
+  marcas.forEach(m=>{ m.y0=y(m.v); m.y=m.y0;
+    svg.append(mk('circle',{cx:x(j),cy:m.y0,r:4.5,fill:m.col,stroke:'var(--surface)','stroke-width':2}));});
+  marcas.sort((a,b)=>a.y-b.y);
+  for(let i=1;i<marcas.length;i++) if(marcas[i].y-marcas[i-1].y<17) marcas[i].y=marcas[i-1].y+17;
+  marcas.forEach(m=>{ const t=mk('text',{x:x(j)+11,y:m.y+4,class:'lbl'});
+    t.setAttribute('fill',m.col); t.textContent=m.txt; svg.append(t);});
+
+  svg.append(mk('line',{class:'ax',x1:L,x2:W-R,y1:H-B,y2:H-B}));
+  s.forEach((p,i)=>{ if(i%2===0||i===s.length-1){
+    const t=mk('text',{x:x(i),y:H-B+16,'text-anchor':'middle'}); t.textContent=dm(p.f); svg.append(t);}});
+
+  // capa de interacción
+  s.forEach((p,i)=>{
+    const w=(W-L-R)/Math.max(1,s.length-1);
+    const hit=mk('rect',{x:x(i)-w/2,y:T,width:w,height:H-T-B,fill:'transparent'});
+    tip(hit, dm(p.f)+'\nPlan acumulado: '+fmt(p.plan)
+      +(p.real!=null? '\nAvance acumulado: '+fmt(p.real)+'\nBrecha: '+(p.real-p.plan>=0?'+':'')+fmt(p.real-p.plan) : '\nSin levantamiento'));
+    svg.append(hit);
+  });
+  cont.innerHTML=''; cont.append(svg);
+}
+
+/* ───────────────────────────── render ──────────────────────────────────── */
+function render(D){
+  ['#kpis','#bullet','#muni','#dias','#diasx','#cuotas','#pr-acceso','#pr-prov',
+   '#pr-barr','#pr-barrcfd'].forEach(s=>{const e=$(s); if(e)e.innerHTML='';});
+  $('#otros tbody').innerHTML=''; $('#pr-tab tbody').innerHTML='';
+
+  $('#corte').textContent='Corte al '+new Date(D.corte+'T12:00')
+    .toLocaleDateString('es-HN',{day:'numeric',month:'long',year:'numeric'});
+  $('#foot-gen').textContent='Inicio oficial del trabajo de campo: '+D.inicio
+    +'. Se excluyeron '+D.pruebas+' envío(s) anteriores, correspondientes a pruebas de configuración del formulario.'
+    +' Calendario de referencia: '+CFG.fuentePlan+'.';
+
+  const neg=D.brecha<0;
+  const notaPlan = D.sinPlan.length
+    ? 'Solo cubre '+CFG.planCampo.filter(v=>v.ini).map(v=>v.terr).join(' y ')
+      +'; '+D.sinPlan.join(' y ')+' sin calendario vigente'
+    : 'Según el calendario de campo vigente';
+  [{l:'Avance real I1',v:fmt(D.n),u:' / '+fmt(D.metaTot),hero:1,f:'<b>'+D.pct+'%</b> de la meta · faltan '+fmt(D.restante)},
+   {l:'Plan a la fecha',v:fmt(D.planHoy),u:' encuestas',f:notaPlan},
+   {l:'Brecha frente al plan',v:(D.brecha>=0?'+':'')+fmt(D.brecha),u:'',cls:neg?'neg':'pos',
+    f: D.planHoy===0 ? 'Sin calendario vigente contra el cual comparar'
+       : D.cumpl>=200 ? 'Avance de <b>'+(D.cumpl/100).toFixed(1)+'×</b> lo previsto a la fecha'
+       : 'Cumplimiento del <b>'+D.cumpl+'%</b> de lo planificado'},
+   {l:'Ritmo diario observado',v:D.ritmo,u:' /día',f:D.dias_faltan!=null
+      ?'A este ritmo, cierre en <b>~'+D.dias_faltan+' días</b>':'Proyección de cierre desde el tercer día de campo'},
+   {l:'Tasa de no consentimiento',v:D.tasa_rechazo,u:'%',f:fmt(D.rechazos)+' de '+fmt(D.registros)+' contactos'}
+  ].forEach(k=>{const c=el('div','kpi'+(k.hero?' hero':''));
+    c.append(el('div','lbl',k.l),el('div','val'+(k.cls?' '+k.cls:''),k.v+'<small>'+k.u+'</small>'),
+             el('div','foot',k.f)); $('#kpis').append(c);});
+
+  barra($('#bullet'),{name:'<b>Total del instrumento I1</b>',logrado:D.n,meta:D.metaTot,plan:D.planHoy});
+  D.territorio.forEach(t=>barra($('#bullet'),
+    {name:t.terr+(t.terr==='La Paz'?' · MAMCEPAZ':' · MANORCHO'),logrado:t.logrado,meta:t.meta,
+     plan:t.plan, planNota: t.plan==null?'sin calendario':null}));
+
+  const vent=CFG.planCampo.filter(v=>v.ini&&v.fin)
+    .map(v=>v.terr+' del '+dm(v.ini)+' al '+dm(v.fin)).join(' y ');
+  const atras=D.territorio.filter(t=>t.plan!=null && t.logrado<t.plan);
+  const partes=[];
+  partes.push('<b>Cómo leer el plan:</b> el campo arrancó el '+dm(D.inicio)
+    +' y todo el tablero se calcula desde esa fecha. El plan a la fecha ('+fmt(D.planHoy)
+    +') es lo que el calendario vigente preveía tener levantado hoy: '+vent+'.');
+  if(D.sinPlan.length)
+    partes.push('<b>'+D.sinPlan.join(' y ')+' no tiene calendario de campo vigente</b>, así que no se le '
+      +'calcula plan ni se le imputa retraso: aparece en cero contra su meta de '
+      +fmt(D.metaTot-D.metaPlan)+' encuestas. El calendario cubre hoy '+fmt(D.metaPlan)+' de las '
+      +fmt(D.metaTot)+' encuestas comprometidas; fijar las fechas de '+D.sinPlan.join(' y ')
+      +' es la decisión que falta para poder proyectar el cierre.');
+  if(atras.length)
+    partes.push('<b>Retraso:</b> '+atras.map(t=>t.terr+' acumula '+fmt(t.plan-t.logrado)+' encuestas por debajo de su plan').join(' y ')+'.');
+  else if(D.brecha>0)
+    partes.push('<b>Los territorios con calendario van por delante</b> de lo previsto en '+fmt(D.brecha)+' encuestas.');
+  $('#nota-plan').innerHTML = partes.join(' ');
+
+  $('#muni-sub').innerHTML='La meta municipal se deriva de la meta del territorio, no es un dato '
+    +'externo: a cada municipio se le garantiza el piso de '+CFG.piso+' encuestas y el excedente se '
+    +'reparte proporcionalmente a su base, de modo que la suma cuadre exactamente con las '
+    +fmt(CFG.metaTerr['La Paz'])+' encuestas de cada territorio. Bases utilizadas: '
+    + Object.keys(CFG.baseFuente).map(k=>'<b>'+k+'</b>, '+CFG.baseFuente[k]).join('; ')+'.';
+  const muni=D.municipios.slice();
+  D.territorio.forEach(t=>{
+    const g=muni.filter(m=>m.terr===t.terr).sort((a,b)=>(b.logrado-a.logrado)||(b.meta-a.meta));
+    if(!g.length) return;
+    const cab=el('div','grp');
+    cab.innerHTML='<span>'+t.terr+(t.terr==='La Paz'?' · MAMCEPAZ':' · MANORCHO')+'</span>'
+      +'<span class="acum"><b>'+fmt(t.logrado)+'</b> de '+fmt(t.meta)+' · '+pct(t.logrado,t.meta)+'% acumulado'
+      +' · '+g.filter(m=>m.logrado>0).length+' de '+g.length+' municipios iniciados</span>';
+    $('#muni').append(cab);
+    g.forEach(m=>barra($('#muni'),{name:m.muni,logrado:m.logrado,meta:m.meta,piso:m.piso}));
+  });
+  const sobre=muni.filter(m=>m.logrado>m.meta).map(m=>m.muni+' ('+m.logrado+' vs '+m.meta+')');
+  const bajo =muni.filter(m=>m.logrado>0&&m.logrado<m.piso).map(m=>m.muni);
+  const alto =muni.filter(m=>m.piso>m.meta).map(m=>m.muni);
+  const cero =muni.filter(m=>m.logrado===0);
+  $('#alerta-muni').innerHTML=
+    (sobre.length?'<b>Sobrecobertura:</b> '+sobre.join(', ')+'. Redistribuir las siguientes jornadas hacia los nodos rezagados. ':'')
+   +(bajo.length ?'<b>Bajo el piso de '+CFG.piso+':</b> '+bajo.join(', ')+'. ':'')
+   +(alto.length ?'<b>Meta por debajo del piso:</b> '+alto.join(', ')+' — el reparto proporcional deja estos nodos bajo las '+CFG.piso+' encuestas mínimas; corregir el reparto o documentar la excepción. ':'')
+   +(cero.length ?'<b>Sin iniciar:</b> '+cero.length+' municipios ('+cero.filter(m=>m.terr==='Choluteca').length+' en Choluteca, donde el marco de hogares sigue pendiente de MANORCHO).':'');
+
+  curva($('#curva'), D);
+
+  const maxd=Math.max(...D.dias.map(d=>d.n),1);
+  D.dias.forEach(d=>{const c=el('div','col'), b=el('div','b');
+    b.style.height=Math.max(2,132*d.n/maxd-22)+'px';
+    tip(b,dm(d.fecha)+': '+d.n+' encuestas válidas');
+    c.append(el('div','v',fmt(d.n)),b); $('#dias').append(c);
+    $('#diasx').append(el('div','',dm(d.fecha)));});
+
+  D.cuotas.forEach(q=>{const ok=q.pct>=q.piso, m=el('div','meter');
+    m.append(el('div','top','<b>'+q.pct+'%</b><span>'+fmt(q.n)+' de '+fmt(D.n)+' · piso '+q.piso+'%'
+      +(q.meta?' · meta '+q.meta+'%':'')+'</span>'));
+    const bar=el('div','bar'), i=el('i');
+    i.style.width=Math.min(100,q.pct)+'%'; i.style.background=ok?'var(--good)':'var(--crit)';
+    bar.append(i); const mk=el('span','mark'); mk.style.left=q.piso+'%'; bar.append(mk); m.append(bar);
+    m.append(el('div','note','<span class="st '+(ok?'ok':'cr')+'"><i class="dot"></i>'+q.label
+      +' — '+(ok?'cuota cubierta':'por debajo del piso')+'</span>')); $('#cuotas').append(m);});
+
+  const SEM={ok:'En curso',wa:'Insumo parcial',pe:'No iniciado'};
+  CFG.otros.forEach(([cod,nom,meta,est,s])=>{const tr=el('tr');
+    tr.innerHTML='<td><b>'+cod+'</b> · '+nom+'</td><td class="mini">'+meta+'</td><td class="mini">'+est
+      +'</td><td class="n"><span class="st '+s+'"><i class="dot"></i>'+SEM[s]+'</span></td>';
+    $('#otros tbody').append(tr);});
+
+  const P=D.prelim;
+  $('#prelim-sub').textContent='Base: '+D.n+' encuestas válidas al corte, concentradas en La Paz. Sin ponderar.';
+  barra($('#pr-acceso'),{name:'Usó algún servicio financiero',logrado:P.acceso_si,meta:D.n});
+  barra($('#pr-acceso'),{name:'No usó ninguno',logrado:D.n-P.acceso_si,meta:D.n,color:'var(--plan)'});
+  P.proveedores.slice(0,6).forEach(([k,v])=>barra($('#pr-prov'),{name:k,logrado:v,meta:D.n}));
+  P.barreras.slice(0,6).forEach(([k,v])=>barra($('#pr-barr'),{name:k,logrado:v,meta:D.n}));
+  P.barreras_cfd.slice(0,6).forEach(([k,v])=>barra($('#pr-barrcfd'),{name:k,logrado:v,meta:D.n}));
+  const fila=(l,c)=>{const tr=el('tr');
+    tr.innerHTML='<td>'+l+'</td><td class="n">'+fmt(c)+'</td><td class="n">'+pct(c,D.n)+'%</td>';
+    $('#pr-tab tbody').append(tr);};
+  fila('Accedió a algún servicio financiero en los últimos 12 meses',P.acceso_si);
+  fila('Menciona proveedores formales',P.formal);
+  fila('Menciona proveedores informales (prestamista, empeño, caja informal)',P.informal);
+  fila('Declara deuda activa del hogar',P.deuda['Sí, el hogar sí tiene alguna deuda activa']||0);
+  fila('No lleva ningún registro de ingresos y gastos',P.registro['No']||0);
+  fila('Nunca recibió educación financiera',P.capacitacion['No']||0);
+  fila('Considera migrar en los próximos 12 meses (sí o tal vez)',(P.migracion['Sí']||0)+(P.migracion['Tal vez']||0));
+}
+
+/* ───────────────────────────── arranque ────────────────────────────────── */
+const estado=(c,t)=>{$('#fuente').className='fuente '+c; $('#fuente-txt').innerHTML=t;};
+const ahora=()=>new Date().toLocaleString('es-HN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+
+render(agregar(SNAPSHOT.header, SNAPSHOT.rows));
+estado('','Instantánea incrustada del '+SNAPSHOT.generado+' · sin conexión a la base en Drive.');
+
+const url=new URLSearchParams(location.search).get('csv')||FUENTE_CSV;
+if(url){
+  estado('','Consultando la base del proyecto en Google Drive…');
+  fetch(url,{cache:'no-store'})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+    .then(txt=>{ const t=parseCSV(txt);
+      if(t.length<2) throw new Error('la pestaña publicada está vacía');
+      render(agregar(t[0],t.slice(1)));
+      estado('live','<b>En vivo</b> · datos leídos de Google Drive, actualizados a las '+ahora()
+        +'. Recargue la página para volver a consultar.');})
+    .catch(e=>{ render(agregar(SNAPSHOT.header,SNAPSHOT.rows));
+      estado('err','No fue posible leer la base en Drive ('+e.message+'). Se muestra la instantánea del '
+        +SNAPSHOT.generado+'. Verifique que la pestaña I1_PUB siga publicada en la web como CSV.');});
+}
+
+const btn=$('#theme');
+btn.onclick=()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');
+  btn.textContent=d?'Modo oscuro':'Modo claro';};
+if(matchMedia('(prefers-color-scheme: dark)').matches){
+  document.documentElement.setAttribute('data-theme','dark'); btn.textContent='Modo claro';}
+</script>
+</body>
+</html>
