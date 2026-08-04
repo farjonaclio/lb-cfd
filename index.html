@@ -336,11 +336,14 @@ footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--grid);
 </div>
 
 <div class="card" id="card-inc">
-  <div class="pill"><span class="n">08</span><h2>Incidencias de campo</h2></div>
-  <p class="sub">Rechazos, comunidades inaccesibles, problemas con el formulario, seguridad,
-    duplicados. Se registran desde el celular y llegan al mismo libro del proyecto.</p>
+  <div class="pill"><span class="n">08</span><h2>Cuaderno de campo</h2></div>
+  <p class="sub">Hallazgos, observaciones del contexto, citas de los actores, contactos nuevos —
+    y también las incidencias operativas: rechazos, comunidades inaccesibles, problemas con el
+    formulario. Se registra desde el celular y llega al mismo libro del proyecto, con el catálogo
+    de temas de la matriz de sistematización cualitativa, de modo que la nota de campo entra
+    directamente a la codificación en vez de perderse en el grupo de WhatsApp.</p>
   <p style="margin:14px 0 0"><a class="act" id="lnk-inc" href="#" target="_blank" rel="noopener">
-    Reportar una incidencia</a></p>
+    Registrar en el cuaderno de campo</a></p>
 </div>
 
 <footer>
@@ -371,7 +374,7 @@ const SNAPSHOT = {"i1":{"header":["¿La persona otorga su consentimiento para in
 const FUENTE_CSV    = "";   /* I1_PUB */
 const FUENTE_CSV_I3 = "";   /* I3_PUB */
 const FUENTE_CSV_I4 = "";   /* I4_PUB */
-const FORM_INCIDENCIAS = "";
+const FORM_INCIDENCIAS = "https://forms.gle/ihmDKaEZPyhoF5Rw6";   /* cuaderno de campo */
 
 const CFG = {
   inicio: "2026-08-03",           /* inicio del campo; nada anterior se cuenta */
@@ -1097,7 +1100,7 @@ function render(A){
 
   const a=$('#lnk-inc');
   if(FORM_INCIDENCIAS){a.href=FORM_INCIDENCIAS; a.classList.remove('sec');
-    a.textContent='Reportar una incidencia'}
+    a.textContent='Registrar en el cuaderno de campo'}
   else{a.classList.add('sec'); a.textContent='Formulario pendiente de configurar';
        a.removeAttribute('href')}
 }
