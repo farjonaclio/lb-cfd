@@ -279,6 +279,7 @@ footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--grid);
     <button class="fb" data-f="I4">I4 · 40</button>
   </div>
   <p class="sub" id="nota-vista"></p>
+  <div id="avisos"></div>
   <div id="combo"></div>
   <div class="legend">
     <span><i class="sw" style="background:var(--real)"></i> Real del día</span>
@@ -423,6 +424,32 @@ const dm=s=>s?s.slice(8,10)+'/'+s.slice(5,7):'';
 const dnum=s=>Math.floor(Date.parse(s+'T00:00:00Z')/864e5);
 const dstr=n=>new Date(n*864e5).toISOString().slice(0,10);
 const num=v=>{const x=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(x)?null:x};
+/* ── Fecha de envío: no confiar en que llegue en ISO.
+   El export de KOBO trae «2026-08-03» como texto, pero si Google Sheets
+   interpreta esa columna como fecha, la publicación en CSV la devuelve con el
+   formato local (3/8/2026). Comparar eso como cadena contra «2026-08-03» daría
+   cero registros en silencio, que es la peor falla posible en un tablero.
+   Ante d/m vs m/d —ambiguo para días ≤ 12— se elige la lectura que cae dentro
+   de la ventana del operativo; si ambas caen, se prefiere d/m (locale es-HN). */
+const VENT=[0,140];
+function fechaISO(v){
+  const s=String(v==null?'':v).trim(); if(!s) return '';
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  m=s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if(m) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/);
+  if(m){
+    const arma=(d,mes)=>m[3]+'-'+String(mes).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dmy=arma(m[1],m[2]), mdy=arma(m[2],m[1]);
+    const dentro=f=>{const k=dnum(f)-dnum(CFG.inicio); return k>=VENT[0]&&k<=VENT[1]};
+    if(dentro(dmy)) return dmy;
+    if(dentro(mdy)) return mdy;
+    return dmy;
+  }
+  const d=Date.parse(s);
+  return isNaN(d)?'':new Date(d).toISOString().slice(0,10);
+}
 const TIP=$('#tip');
 function tip(n,t){n.addEventListener('mouseenter',()=>{TIP.textContent=t;TIP.style.opacity=1});
   n.addEventListener('mousemove',e=>{TIP.style.left=Math.min(innerWidth-200,e.clientX+14)+'px';
@@ -521,7 +548,7 @@ function leerI1(header,rows){
     p13:c.opciones('13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)')};
   return rows.map(r=>{
     const ed=parseInt(leer(r,C.edad),10);
-    const o={fecha:(leer(r,C.ts)||'').slice(0,10), cons:leer(r,C.cons),
+    const o={fecha:fechaISO(leer(r,C.ts)), cons:leer(r,C.cons),
       sexo:leer(r,C.sexo), edad:isNaN(ed)?null:ed, ind:leer(r,C.ind), hog:leer(r,C.hog)};
     ['p6','p14','p15','p16','p17','p18','p19','p22','p33'].forEach(k=>o[k]=leer(r,C[k]));
     for(const k in O) o[k]=marcadas(r,O[k]);
@@ -558,7 +585,7 @@ function leerI3(header,rows){
     clima:c.opciones('13. ¿Qué prácticas de adaptación al clima aplican? (marque)'),
     barr:c.opciones('24. ¿Qué barreras enfrentan mujeres y jóvenes para acceder al crédito y para liderar? (marque todas las que apliquen)')};
   return rows.map(r=>{
-    const o={fecha:(leer(r,C.ts)||'').slice(0,10), cons:leer(r,C.cons),
+    const o={fecha:fechaISO(leer(r,C.ts)), cons:leer(r,C.cons),
       tipo:leer(r,C.tipo), legal:leer(r,C.legal), cliente:leer(r,C.cliente),
       mtot:num(leer(r,C.mtot)), mjov:num(leer(r,C.mjov)), mind:num(leer(r,C.mind)),
       htot:num(leer(r,C.htot)), hjov:num(leer(r,C.hjov)), hind:num(leer(r,C.hind)),
@@ -606,7 +633,7 @@ function leerI4(header,rows){
     acc:c.opciones('12. ¿Qué acciones o mecanismos específicos implementa la entidad para facilitar la inclusión financiera de estos grupos priorizados? (marque todas las que apliquen)')};
   const B=BARR_I4.map(b=>({b, op:c.opciones(b)}));
   return rows.map(r=>{
-    const o={fecha:(leer(r,C.ts)||'').slice(0,10), cons:leer(r,C.cons),
+    const o={fecha:fechaISO(leer(r,C.ts)), cons:leer(r,C.cons),
       tipo:leer(r,C.tipo), cobert:leer(r,C.cobert),
       cartera:num(leer(r,C.cartera)), clientes:num(leer(r,C.clientes)),
       mora:num(leer(r,C.mora)), tasa:num(leer(r,C.tasa)),
@@ -1082,6 +1109,9 @@ function render(A){
     c.append(el('div','l',k.l),el('div','v'+(k.c?' '+k.c:''),k.v+'<small>'+(k.u||'')+'</small>'),
       el('div','f',k.f)); $('#kpis').append(c)});
 
+  const av=$('#avisos'); av.innerHTML='';
+  (A.avisos||[]).forEach(m=>av.append(el('p','alerta','▲ <b>Revisar la fuente.</b> '+m)));
+
   curva($('#combo'),{serie:D.serie,meta:D.meta,corte:D.corte,n:D.n,alto:130});
   panelesTerr($('#terrpanels'),D);
   mapa(D);
@@ -1401,6 +1431,20 @@ function agregarTodo(){
   const corte=fechas.length?fechas[fechas.length-1]:CFG.inicio;
   const guarda=(k,recs)=>{const v=VISTA; VISTA=k; A[k]=nucleo(recs,k,corte); VISTA=v};
   guarda('I1',r1); guarda('I3',r3); guarda('I4',r4); guarda('Todos',todos);
+  /* Aviso explícito: una fuente con filas de las que ninguna queda tras el
+     filtro de fecha es casi siempre un formato de fecha inesperado o una
+     pestaña equivocada. Sin este aviso el tablero mostraría cero sin explicar
+     por qué, que es indistinguible de «no se ha levantado nada». */
+  A.avisos=[];
+  [['I1',r1],['I3',r3],['I4',r4]].forEach(([k,rr])=>{
+    if(rr.length && !rr.some(x=>x.fecha && x.fecha>=CFG.inicio))
+      A.avisos.push(k+': la fuente trae '+rr.length+' fila(s) pero ninguna queda dentro del '
+        +'periodo de campo. Revisar el formato de la columna «_submission_time» en la pestaña '
+        +k+'_PUB — debe verse como 2026-08-03, no como número ni como ########.');
+    if(rr.length && !rr.some(x=>x.terr))
+      A.avisos.push(k+': ninguna fila trae departamento ni municipio reconocible. Revisar que '
+        +'las columnas de ubicación estén dentro de la lista blanca de '+k+'.');
+  });
   A.sI1=sustI1(A.I1.val,A.I1.n);
   A.sI3=sustI3(A.I3.val,A.I3.n);
   A.sI4=sustI4(A.I4.val,A.I4.n);
