@@ -1075,10 +1075,13 @@ function mapaTerr(id,terr,D){
         : 'Sin registros georreferenciados de '+VISTA+' en '+terr+' al corte.')+'</div>';
     return}
   cont.innerHTML='';
-  const oscuro=document.documentElement.getAttribute('data-theme')==='dark';
   if(_maps[id]){_maps[id].remove(); delete _maps[id]}
   const map=L.map(cont,{scrollWheelZoom:false}); _maps[id]=map;
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/'+(oscuro?'dark_all':'light_all')+'/{z}/{x}/{y}{r}.png',
+  /* La cartografía va SIEMPRE en claro, con independencia del tema del
+     tablero. Sobre teselas oscuras los círculos de volumen pierden contraste
+     y el relieve del Corredor Seco deja de leerse. Es una decisión
+     deliberada, no un olvido: no seguir aquí a data-theme.               */
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     {maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(map);
   const maxN=Math.max(...pts.map(p=>p.n));
   const col=getComputedStyle(document.body).getPropertyValue('--real').trim()||'#FF0068';
