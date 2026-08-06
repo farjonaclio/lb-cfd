@@ -380,7 +380,7 @@ const FUENTE_CSV_I4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1z3s_HH
    mediana por municipio, mínimo 3 hogares, redondeada a ~110 m. La ubicación
    de cada vivienda nunca sale del libro. Si queda vacía, el mapa cae a la
    instantánea incrustada, que está congelada al 04-ago-2026.              */
-const FUENTE_CSV_GEO = "";
+const FUENTE_CSV_GEO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1z3s_HHKXLJckZuVnqpLVCpL0fFxEXRXWqDmxIpw-gKVqxbIosyWZKeLuAqpg8uBVUZKD4vmbfrC8/pub?gid=1038689217&single=true&output=csv";   /* _GEO_PUB */
 const FORM_INCIDENCIAS = "https://forms.gle/ihmDKaEZPyhoF5Rw6";   /* cuaderno de campo */
 
 const CFG = {
@@ -1089,7 +1089,10 @@ function geoDesdeCsv(tabla){
   const o={};
   tabla.slice(1).forEach(r=>{
     const mn=norm(String(r[iM]||'').trim()); if(!mn) return;
-    const la=parseFloat(r[iLa]), lo=parseFloat(r[iLo]);
+    /* Defensa: si el libro publica con coma decimal, «13,592» se leería como
+       13 y el punto caería a 65 km. Se normaliza antes de convertir. */
+    const num=v=>parseFloat(String(v==null?'':v).trim().replace(',','.'));
+    const la=num(r[iLa]), lo=num(r[iLo]);
     if(isNaN(la)||isNaN(lo)) return;
     let t=String(r[iD]||'').trim();
     if(t!=='La Paz'&&t!=='Choluteca'){t='';
