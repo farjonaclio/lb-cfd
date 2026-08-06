@@ -546,12 +546,24 @@ function leerI1(header,rows){
     p8:c.opciones('8. ¿Con quién solicitó estos servicios financieros? (puede marcar varias)'),
     p12:c.opciones('12. ¿Cuáles son las principales razones por las que NO suele acceder o se dificulta el acceso a servicios financieros formales? (máximo tres)'),
     p13:c.opciones('13. Y específicamente para acceder a productos del CFD, ¿cuáles son las principales barreras? (máximo tres)')};
+  /* Un reactivo AUSENTE de la publicación no es una pregunta sin responder:
+     es una columna que _SEGURAS no autoriza. No debe penalizar la completitud.
+     Caso real (05-ago-2026): la p5 «actividades económicas del hogar» no está
+     en _SEGURAS, y contarla como campo vacío daba 155 encuestas truncadas de
+     155. Se marca aquí una sola vez y se comparte la misma referencia.      */
+  const FALTA={};
+  ['sexo','edad','ind','hog','p6','p14','p15','p16','p17','p18','p19','p22','p33']
+    .forEach(k=>{ if(!C[k]||!C[k].length) FALTA[k]=true });
+  if(!C.mun||!C.mun.length) FALTA.muni=true;
+  for(const k in O) if(!O[k].length) FALTA[k]=true;
+
   return rows.map(r=>{
     const ed=parseInt(leer(r,C.edad),10);
     const o={fecha:fechaISO(leer(r,C.ts)), cons:leer(r,C.cons),
       sexo:leer(r,C.sexo), edad:isNaN(ed)?null:ed, ind:leer(r,C.ind), hog:leer(r,C.hog)};
     ['p6','p14','p15','p16','p17','p18','p19','p22','p33'].forEach(k=>o[k]=leer(r,C[k]));
     for(const k in O) o[k]=marcadas(r,O[k]);
+    o._falta=FALTA;
     return nucleoRegistro(o,C,r);
   });
 }
@@ -721,21 +733,54 @@ function nucleo(recs, vista, corteGlobal){
 
 /* ═══════════════ bloques sustantivos por instrumento ═════════════════════ */
 function sustI1(val,n){
-  /* Índice de completitud informativa: KoboToolbox obliga a responder casi
-     todo, así que contar campos vacíos daría 100% siempre. Lo que discrimina
-     es cuántas respuestas aportan información: un «no sabe / no responde»
-     deja el reactivo sin dato útil y cuenta como no informativo.            */
+  /* DOS indicadores distintos, que antes estaban fundidos en uno solo:
+       · COMPLETITUD — reactivos aplicables que quedaron SIN RESPONDER.
+         Mide calidad del levantamiento: una encuesta truncada es un problema.
+       · NO-RESPUESTA SUSTANTIVA — reactivos contestados «no sabe / no
+         responde». NO es un defecto de campo: es un hallazgo sobre el
+         cuestionario y sobre lo que la persona sabe de su propia economía.
+     Contarlos juntos hacía que ninguna encuesta alcanzara el 100% y mandaba a
+     revisar encuestas correctas. Medición del 05-ago-2026 sobre 155 válidas:
+     los 46 casos «bajo el 80%» eran íntegramente «no sabe», ni un solo campo
+     vacío, y el 41,9% se concentraba en la p16.                             */
   const NUC=['sexo','edad','ind','muni','hog','p6','p14','p16','p17','p18','p19','p22','p33'];
-  const inf=v=>{const t=String(v==null?'':v).trim();
-    return t!=='' && !t.toLowerCase().startsWith('no sabe')};
+  const ETIQ={sexo:'Sexo del informante', edad:'Edad', ind:'Pertenencia indígena',
+    muni:'Municipio', hog:'Personas en el hogar',
+    p6:'6 · Usó servicios financieros (12 m)', p14:'14 · El hogar tiene deudas',
+    p15:'15 · Qué parte de la deuda', p16:'16 · Qué queda tras cubrir gastos',
+    p17:'17 · Lleva registro de ingresos y gastos',
+    p18:'18 · Qué hace ante una oferta financiera',
+    p19:'19 · Recibió capacitación financiera',
+    p22:'22 · Qué parte de los ingresos', p33:'33 · Piensa migrar'};
+  const esVacio =v=>String(v==null?'':v).trim()==='';
+  const esNoSabe=v=>String(v==null?'':v).trim().toLowerCase().startsWith('no sabe');
+
+  const noSabe={}, aplican={};
   let sumC=0, completas=0;
   val.forEach(x=>{
-    let apl=NUC.length+1, res=NUC.filter(k=>inf(x[k])).length+(x.p5.length?1:0);
-    if(x.p6==='Sí'){apl++; if(x.p7.length)res++}
-    if((x.p14||'').startsWith('Sí')){apl++; if(inf(x.p15))res++}
-    x._c=res/apl; sumC+=x._c; if(res===apl)completas++;
+    const falta=x._falta||{};
+    /* reactivos que el flujo exige a ESTA encuesta, descontando los que no
+       llegaron a publicarse (ausencia de columna != pregunta sin responder) */
+    const apls=NUC.filter(k=>!falta[k]);
+    if((x.p14||'').startsWith('Sí') && !falta.p15) apls.push('p15');
+    let vac=0, ns=0;
+    apls.forEach(k=>{
+      aplican[k]=(aplican[k]||0)+1;
+      if(esVacio(x[k])) vac++;
+      else if(esNoSabe(x[k])){noSabe[k]=(noSabe[k]||0)+1; ns++}
+    });
+    /* p5 y p7 son de selección múltiple: cuentan si traen alguna opción */
+    let tot=apls.length;
+    if(!falta.p5){tot++; if(!x.p5.length)vac++}
+    if(x.p6==='Sí' && !falta.p7){tot++; if(!x.p7.length)vac++}
+    x._vac=vac; x._ns=ns;
+    x._c=tot?(tot-vac)/tot:1; sumC+=x._c; if(!vac)completas++;
   });
-  const bajo80=val.filter(x=>x._c<0.8).length;
+  const truncadas=val.filter(x=>x._vac>0).length;
+  const conNoSabe=val.filter(x=>x._ns>0).length;
+  const rankNS=Object.keys(noSabe)
+    .map(k=>[ETIQ[k]||k, pc(noSabe[k], aplican[k]||n)])
+    .sort((a,b)=>b[1]-a[1]);
   const prod=val.filter(x=>x.p5.some(a=>CFG.productivas.includes(a))).length;
   const cq={muj:val.filter(x=>x.sexo==='Mujer').length,
             jov:val.filter(x=>x.edad!==null&&x.edad<30).length,
@@ -745,7 +790,9 @@ function sustI1(val,n){
   const INF=['Prestamista o comerciante informal','Caja rural informal','Casa de empeño informal'];
   const sm=(a,s)=>a.filter(([k])=>s.includes(k)).reduce((t,[,x])=>t+x,0);
   return {
-    compl:{media:n?Math.round(1000*sumC/n)/10:0, completas, pctCompletas:pc(completas,n), bajo80},
+    compl:{media:n?Math.round(1000*sumC/n)/10:0, completas, pctCompletas:pc(completas,n),
+      truncadas, pctTrunc:pc(truncadas,n),
+      conNoSabe, pctNoSabe:pc(conNoSabe,n), rankNS},
     perfil:{prod, pctProd:pc(prod,n), actividades:cuentaM(val,'p5').map(([k,c])=>[k,pc(c,n)])},
     cuotas:CFG.cuotas.map(([l,p,k])=>({l,p,n:cq[k],pct:pc(cq[k],n)})),
     prelim:{acceso:pc(cuenta(val,x=>x.p6)['Sí']||0,n), formal:pc(sm(prov,FRM),n),
@@ -1098,7 +1145,7 @@ function render(A){
   if(VISTA==='Todos') kpis.push({l:'Municipios iniciados',v:Object.keys(D.porMuni).filter(k=>D.porMuni[k]>0).length,
     u:' / 12',k:'b2',f:'De los 12 del alcance'});
   if(VISTA==='I1') kpis.push({l:'Completitud media',v:A.sI1.compl.media,u:'%',k:'b2',
-    f:'<b>'+A.sI1.compl.pctCompletas+'%</b> de encuestas completas'});
+    f:'<b>'+A.sI1.compl.pctCompletas+'%</b> sin campos pendientes'});
   if(VISTA==='I3') kpis.push({l:'Personas socias alcanzadas',
     v:A.sI3.socios.conSoc?fmt(A.sI3.socios.total):'—',u:'',k:'b2',
     f:A.sI3.socios.conSoc?'<b>'+A.sI3.socios.pctMuj+'%</b> mujeres'
@@ -1201,19 +1248,32 @@ function vistaI1(A){
   c1.append(p1);
 
   c2.append(el('h3','','Completitud del cuestionario'),
-    el('p','sub','Respuestas con información útil sobre las aplicables. Un «no sabe / no responde» no cuenta como respondida.'));
+    el('p','sub','Reactivos aplicables que quedaron sin responder, según el flujo del formulario. '
+      +'Un «no sabe / no responde» ES una respuesta y no penaliza aquí: se mide aparte, abajo.'));
   c2.append(el('div','',
     '<div style="font-size:38px;font-weight:700;line-height:1;margin:14px 0 4px">'
     +S.compl.media+'<span style="font-size:17px;font-weight:400">%</span></div>'));
   const cb=el('div','pct',''); c2.append(cb);
-  pctRow(cb,'Encuestas con 100% de respuestas útiles — '+fmt(S.compl.completas)+' de '+fmt(n),
+  pctRow(cb,'Encuestas sin ningún campo pendiente — '+fmt(S.compl.completas)+' de '+fmt(n),
     S.compl.pctCompletas,'var(--ok)');
-  pctRow(cb,'Encuestas bajo el 80% — '+fmt(S.compl.bajo80)+' de '+fmt(n),
-    pc(S.compl.bajo80,n),'var(--crit)');
+  pctRow(cb,'Encuestas truncadas — '+fmt(S.compl.truncadas)+' de '+fmt(n),
+    S.compl.pctTrunc,'var(--crit)');
   pctRow(cb,'Sin consentimiento — '+fmt(D.rechazos)+' de '+fmt(D.registros),D.tasaRech,'var(--crit)');
-  if(S.compl.bajo80) c2.append(el('p','sub',
-    '<b style="color:var(--crit)">'+fmt(S.compl.bajo80)+' encuesta(s) por debajo del 80%</b> de '
-    +'respuestas útiles. Revisar caso a caso: pueden no ser consideradas en el análisis final.'));
+  c2.append(el('p','sub', S.compl.truncadas
+    ? '<b style="color:var(--crit)">'+fmt(S.compl.truncadas)+' encuesta(s) con campos sin responder.</b> '
+      +'Estas sí conviene revisarlas: son levantamientos interrumpidos.'
+    : 'Ninguna encuesta quedó interrumpida. Todos los reactivos aplicables tienen respuesta.'));
+
+  c2.append(el('h3','','No-respuesta sustantiva'));
+  c2.append(el('p','sub','Porcentaje de «no sabe / no responde» sobre las encuestas a las que el '
+    +'reactivo aplica. No mide calidad de campo: señala qué preguntas no está capturando el '
+    +'instrumento. <b>'+fmt(S.compl.conNoSabe)+' de '+fmt(n)+'</b> encuestas ('+S.compl.pctNoSabe
+    +'%) tienen al menos un «no sabe».'));
+  if(S.compl.rankNS.length){
+    const nb=el('div','pct','');
+    S.compl.rankNS.slice(0,6).forEach(([k,v])=>pctRow(nb,k,v,'var(--crit)'));
+    c2.append(nb);
+  } else c2.append(el('p','sub','Ningún reactivo registra «no sabe».'));
 
   c3.append(el('h3','','Cuotas de inclusión'), el('p','sub','Pisos del diseño muestral.'));
   S.cuotas.forEach(q=>{const ok=q.pct>=q.p, m=el('div','mtr','');
@@ -1436,6 +1496,20 @@ function agregarTodo(){
      pestaña equivocada. Sin este aviso el tablero mostraría cero sin explicar
      por qué, que es indistinguible de «no se ha levantado nada». */
   A.avisos=[];
+  /* Reactivos que el tablero usa pero que _SEGURAS no autoriza a publicar.
+     Sin este aviso el panel correspondiente sale en cero y parece un dato,
+     no una columna ausente. Pasó con la p5 el 05-ago-2026.                 */
+  const NOMBRE_REACTIVO={p5:'5 · actividades económicas del hogar',
+    p7:'7 · servicios financieros usados', p8:'8 · con quién los solicitó',
+    p12:'12 · barreras de acceso', p13:'13 · barreras específicas del CFD',
+    p14:'14 · deudas activas', p16:'16 · capacidad de pago', p17:'17 · lleva registro',
+    p19:'19 · educación financiera', p22:'22 · gasto en alimentos', p33:'33 · intención de migrar'};
+  if(r1.length && r1[0]._falta){
+    const aus=Object.keys(r1[0]._falta).filter(k=>NOMBRE_REACTIVO[k]);
+    if(aus.length) A.avisos.push('I1: '+aus.length+' reactivo(s) que el tablero usa no están en '
+      +'I1_PUB — '+aus.map(k=>NOMBRE_REACTIVO[k]).join(' · ')+'. Los paneles que dependen de '
+      +'ellos aparecerán vacíos. Se corrige añadiendo esas columnas a la pestaña _SEGURAS.');
+  }
   [['I1',r1],['I3',r3],['I4',r4]].forEach(([k,rr])=>{
     if(rr.length && !rr.some(x=>x.fecha && x.fecha>=CFG.inicio))
       A.avisos.push(k+': la fuente trae '+rr.length+' fila(s) pero ninguna queda dentro del '
