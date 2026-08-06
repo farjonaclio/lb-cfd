@@ -375,6 +375,12 @@ const SNAPSHOT = {"i1":{"header":["¿La persona otorga su consentimiento para in
 const FUENTE_CSV    = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1z3s_HHKXLJckZuVnqpLVCpL0fFxEXRXWqDmxIpw-gKVqxbIosyWZKeLuAqpg8uBVUZKD4vmbfrC8/pub?gid=1547471822&single=true&output=csv";   /* I1_PUB */
 const FUENTE_CSV_I3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1z3s_HHKXLJckZuVnqpLVCpL0fFxEXRXWqDmxIpw-gKVqxbIosyWZKeLuAqpg8uBVUZKD4vmbfrC8/pub?gid=1272844033&single=true&output=csv";   /* I3_PUB */
 const FUENTE_CSV_I4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1z3s_HHKXLJckZuVnqpLVCpL0fFxEXRXWqDmxIpw-gKVqxbIosyWZKeLuAqpg8uBVUZKD4vmbfrC8/pub?gid=1395600004&single=true&output=csv";   /* I4_PUB */
+/* Centroides de campo por municipio: pestaña _GEO_PUB del libro. La calcula el
+   Apps Script a partir del GPS de I1_CRUDO y publica SOLO el agregado —
+   mediana por municipio, mínimo 3 hogares, redondeada a ~110 m. La ubicación
+   de cada vivienda nunca sale del libro. Si queda vacía, el mapa cae a la
+   instantánea incrustada, que está congelada al 04-ago-2026.              */
+const FUENTE_CSV_GEO = "";
 const FORM_INCIDENCIAS = "https://forms.gle/ihmDKaEZPyhoF5Rw6";   /* cuaderno de campo */
 
 const CFG = {
@@ -1058,15 +1064,51 @@ function curva(cont,O){
   cont.innerHTML=''; cont.append(svg);
 }
 
+/* ── CENTROIDES ──────────────────────────────────────────────────────────
+   GEO se indexa por 'Territorio|municipio', no solo por municipio: «San José»
+   existe en La Paz y en Choluteca, y con la clave antigua ambos compartían
+   posición en el mapa. Con el departamento en la clave, cada uno cae donde
+   le toca.                                                                */
+let GEO = {};
+function geoDesdeSnapshot(){
+  const g=(SNAPSHOT.geo&&SNAPSHOT.geo.municipios)||{}, o={};
+  Object.keys(g).forEach(m=>{const mn=norm(m);
+    /* La instantánea no guarda departamento. Si el nombre existe en los dos
+       territorios («San José») no hay forma de saber cuál es, y colocarlo en
+       ambos pinta un punto falso: se omite hasta que llegue _GEO_PUB.     */
+    const t=Object.keys(CFG.municipios).filter(k=>CFG.municipios[k].includes(mn));
+    if(t.length===1) o[t[0]+'|'+mn]={lat:g[m].lat, lon:g[m].lon, n:g[m].n||0};
+  });
+  return o;
+}
+function geoDesdeCsv(tabla){
+  const h=tabla[0].map(x=>String(x).trim());
+  const iD=h.indexOf('Departamento'), iM=h.indexOf('Municipio'),
+        iLa=h.indexOf('lat'), iLo=h.indexOf('lon'), iN=h.indexOf('n');
+  if(iM<0||iLa<0||iLo<0) return null;
+  const o={};
+  tabla.slice(1).forEach(r=>{
+    const mn=norm(String(r[iM]||'').trim()); if(!mn) return;
+    const la=parseFloat(r[iLa]), lo=parseFloat(r[iLo]);
+    if(isNaN(la)||isNaN(lo)) return;
+    let t=String(r[iD]||'').trim();
+    if(t!=='La Paz'&&t!=='Choluteca'){t='';
+      for(const k in CFG.municipios) if(CFG.municipios[k].includes(mn)) t=k}
+    if(t) o[t+'|'+mn]={lat:la, lon:lo, n:+r[iN]||0};
+  });
+  return Object.keys(o).length?o:null;
+}
+GEO=geoDesdeSnapshot();
+let GEO_EN_VIVO=false;
+
 /* ── MAPAS (Leaflet + CARTO): uno por territorio, con su propio encuadre ── */
 const _maps={};
 function mapaTerr(id,terr,D){
   const cont=$(id); if(!cont) return;
-  const geo=(SNAPSHOT.geo&&SNAPSHOT.geo.municipios)||{};
-  const dentro=CFG.municipios[terr];
-  const pts=Object.keys(geo).map(m=>({m:norm(m),lat:geo[m].lat,lon:geo[m].lon,
-      n:D.porMuni[terr+'|'+norm(m)]||0}))
-    .filter(p=>p.n>0 && dentro.includes(p.m));
+  const pts=Object.keys(GEO).filter(k=>k.indexOf(terr+'|')===0)
+    .map(k=>({m:k.slice(terr.length+1), lat:GEO[k].lat, lon:GEO[k].lon,
+              n:D.porMuni[k]||0}))
+    .filter(p=>p.n>0);
   if(typeof L==='undefined'||!pts.length){
     if(_maps[id]){_maps[id].remove(); delete _maps[id]}
     cont.innerHTML='<div class="mapvacio">'
@@ -1098,22 +1140,22 @@ function mapa(D){
   mapaTerr('#mapa-lp','La Paz',D);
   mapaTerr('#mapa-ch','Choluteca',D);
   const g=SNAPSHOT.geo||{}, nota=$('#mapa-nota');
-  const geoM=Object.keys(g.municipios||{}).map(norm);
   const conD=['La Paz','Choluteca'].reduce((a,t)=>a+CFG.municipios[t]
-    .filter(m=>geoM.includes(m)&&(D.porMuni[t+'|'+m]||0)>0).length,0);
+    .filter(m=>GEO[t+'|'+m]&&(D.porMuni[t+'|'+m]||0)>0).length,0);
   /* municipios con registros pero todavía sin centroide de campo */
-  const sinGeo=Object.keys(D.porMuni).filter(k=>D.porMuni[k]>0 && !geoM.includes(k.split('|')[1]))
+  const sinGeo=Object.keys(D.porMuni).filter(k=>D.porMuni[k]>0 && !GEO[k])
     .map(k=>k.split('|')[1]+' ('+k.split('|')[0]+')');
   nota.innerHTML='Municipios representados en el mapa: <b>'+conD+'</b> de 12.'
     +(sinGeo.length? ' <b>'+sinGeo.join(', ')+'</b> tiene(n) registros de '+VISTA
       +' pero aún no hay coordenadas capturadas ahí por I1, así que no aparece(n) en el mapa.' : '')
-    +(D.homonimos.length&&D.homonimos.some(m=>(D.porMuni['La Paz|'+m]||0)>0&&(D.porMuni['Choluteca|'+m]||0)>0)
-      ? ' <b>Nota:</b> «'+D.homonimos.join('», «')+'» existe(n) en los dos territorios; el centroide '
-        +'de campo se calcula por nombre de municipio, así que ambos comparten posición hasta que se '
-        +'separe el cálculo por departamento en el libro de datos.' : '')
-    +(VISTA!=='I3'&&VISTA!=='I4'&&g.fuera? ' <b style="color:var(--crit)">'+g.fuera+' encuestas ('
-      +pc(g.fuera,g.total||D.n)+'%) registraron coordenadas fuera de Honduras</b> y quedan excluidas '
-      +'del mapa: revisar la captura de GPS en KoboToolbox.' : '');
+    +(GEO_EN_VIVO
+      ? ' Centroides recalculados con cada descarga a partir del GPS de I1, agregados por '
+        +'municipio: la ubicación de cada vivienda no sale del libro de datos.'
+      : ' <b style="color:var(--crit)">Centroides congelados</b> al '+(g.generado||'inicio del campo')
+        +': falta publicar la pestaña _GEO_PUB y pegar su enlace en FUENTE_CSV_GEO.')
+    +(!GEO_EN_VIVO&&VISTA!=='I3'&&VISTA!=='I4'&&g.fuera? ' <b style="color:var(--crit)">'+g.fuera
+      +' encuestas ('+pc(g.fuera,g.total||D.n)+'%) registraron coordenadas fuera de Honduras</b> y '
+      +'quedan excluidas del mapa: revisar la captura de GPS en KoboToolbox.' : '');
 }
 
 /* ═══════════════ render ══════════════════════════════════════════════════ */
@@ -1536,6 +1578,17 @@ est('off','Instantánea del '+SNAPSHOT.generado);
 const qs=new URLSearchParams(location.search);
 const FUENTES=[['I1',qs.get('csv')||FUENTE_CSV],['I3',qs.get('csv3')||FUENTE_CSV_I3],
                ['I4',qs.get('csv4')||FUENTE_CSV_I4]].filter(([,u])=>u);
+/* Los centroides van por su cuenta: si fallan, el mapa cae a la instantánea
+   pero el resto del tablero no debe marcarse como «parcial» por eso.      */
+const urlGeo=qs.get('csvgeo')||FUENTE_CSV_GEO;
+if(urlGeo){
+  fetch(urlGeo,{cache:'no-store'})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text()})
+    .then(x=>{const g=geoDesdeCsv(parseCSV(x));
+      if(g){GEO=g; GEO_EN_VIVO=true; pintar()}})
+    .catch(e=>console.warn('_GEO_PUB: '+e.message));
+}
+
 if(FUENTES.length){
   est('off','Consultando Drive…');
   Promise.all(FUENTES.map(([k,u])=>
