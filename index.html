@@ -1610,6 +1610,39 @@ if(FUENTES.length){
   });
 }
 
+/* ── AUTORREFRESCO ───────────────────────────────────────────────────────
+   El libro se actualiza solo cada pocos minutos, pero el tablero solo leía
+   Drive al cargar la página: quien lo dejaba abierto veía cifras congeladas
+   sin saberlo. Cada 5 minutos se vuelven a pedir las fuentes; es el suelo
+   útil, porque la caché de «Publicar en la web» de Google ronda ese tiempo.
+   Solo se repinta si de verdad cambió el número de registros, para no
+   interrumpir a quien esté leyendo un panel.                              */
+function refrescar(){
+  if(document.hidden) return;                 /* pestaña en segundo plano */
+  Promise.all(FUENTES.map(([k,u])=>
+    fetch(u+(u.indexOf('?')<0?'?':'&')+'cb='+Date.now(),{cache:'no-store'})
+      .then(r=>r.ok?r.text():null)
+      .then(x=>{if(!x)return null;
+        const t=parseCSV(x); if(t.length<2)return null;
+        const cambio=!FUENTE[k]||FUENTE[k].r.length!==t.length-1;
+        FUENTE[k]={h:t[0],r:t.slice(1)}; return cambio})
+      .catch(()=>null)))
+  .then(res=>{
+    if(urlGeo) fetch(urlGeo+'&cb='+Date.now(),{cache:'no-store'})
+      .then(r=>r.ok?r.text():null)
+      .then(x=>{if(!x)return; const g=geoDesdeCsv(parseCSV(x));
+        if(g){GEO=g; GEO_EN_VIVO=true}})
+      .catch(()=>{});
+    if(res.some(Boolean)){
+      pintar();
+      est('on','● En vivo · Drive '
+        +new Date().toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'}));
+    }
+  });
+}
+if(FUENTES.length) setInterval(refrescar, 300000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) refrescar()});
+
 document.querySelectorAll('.fb').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.fb').forEach(z=>z.classList.remove('on'));
   b.classList.add('on'); VISTA=b.dataset.f; pintar()});
